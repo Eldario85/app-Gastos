@@ -49,13 +49,15 @@ let totalSuma = 0;
 
 btnSueldo.addEventListener("click", async () => {
   const monto = parseFloat(inputSueldo.value);
-  if (!isNaN(monto)) {
-    // Guardaremos el sueldo en una colección especial llamada 'configuracion'
-    await addDoc(collection(db, "configuracion"), {
-      tipo: "sueldo",
+  const mesSeleccionado = inputMesFiltro.value; // Ej: "2026-04"
+  if (!isNaN(monto) && mesSeleccionado) {
+    // Guardaremos el sueldo con una clave que incluya el mes
+    await addDoc(collection(db, "presupuestos"), {
+      mes: mesSeleccionado,
       monto: monto,
-      fecha: new Date(),
+      fechaCreacion: new Date(),
     });
+    alert("Sueldo de " + mesSeleccionado + " guardado.");
     cargarGastosDesdeFirebase(); // Recargamos para actualizar el saldo
   }
 });
@@ -94,22 +96,59 @@ formulario.addEventListener("submit", async function (evento) {
 
 async function cargarGastosDesdeFirebase() {
   try {
-    // 1. Traer el sueldo (buscamos el último ingresado)
-    const configSnapshot = await getDocs(collection(db, "configuracion"));
-    let sueldoActual = 0;
-    configSnapshot.forEach((doc) => {
-      if (doc.data().tipo === "sueldo") sueldoActual = doc.data().monto;
-    });
-    inputSueldo.value = sueldoActual;
-    //le pedimos a firebase que nos traiga los documentos de la coleccion
-    const querySnapshot = await getDocs(collection(db, "gastos"));
+    // // 1. Traer el sueldo (buscamos el último ingresado)
+    // const configSnapshot = await getDocs(collection(db, "configuracion"));
+    // let sueldoActual = 0;
+    // configSnapshot.forEach((doc) => {
+    //   if (doc.data().tipo === "sueldo") sueldoActual = doc.data().monto;
+    // });
+    // inputSueldo.value = sueldoActual;
+    // //le pedimos a firebase que nos traiga los documentos de la coleccion
+    // const querySnapshot = await getDocs(collection(db, "gastos"));
 
-    //limpiamos la vista por las dudas
-    listaGastos.innerHTML = "";
-    totalSuma = 0;
+    // //limpiamos la vista por las dudas
+    // listaGastos.innerHTML = "";
+    // totalSuma = 0;
 
-    const mesSeleccionado = inputMesFiltro.value;
-    const totalesPorCategoria = {}; //Objeto para guardar la suma de cada categoria
+    // const mesSeleccionado = inputMesFiltro.value;
+    // const totalesPorCategoria = {}; //Objeto para guardar la suma de cada categoria
+    const mesActual = inputMesFiltro.value; // "2026-04"
+        
+        // --- 1. CALCULAR SALDO ANTERIOR (MES PASADO) ---
+        // Obtenemos el año y mes anterior restando 1
+        const fechaAux = new Date(mesActual + "-01");
+        fechaAux.setMonth(fechaAux.getMonth() - 1);
+        const mesPasado = `${fechaAux.getFullYear()}-${String(fechaAux.getMonth() + 1).padStart(2, '0')}`;
+
+        const todosLosGastos = await getDocs(collection(db, "gastos"));
+        const todosLosSueldos = await getDocs(collection(db, "presupuestos"));
+
+        let sueldoMesActual = 0;
+        let saldoAnterior = 0;
+        let gastosMesPasado = 0;
+        let sueldoMesPasado = 0;
+
+        // Buscamos sueldos y gastos históricos para el arrastre
+        todosLosSueldos.forEach(doc => {
+            const data = doc.data();
+            if (data.mes === mesActual) sueldoMesActual = data.monto;
+            if (data.mes === mesPasado) sueldoMesPasado = data.monto;
+        });
+
+        todosLosGastos.forEach(doc => {
+            const data = doc.data();
+            if (data.fecha.startsWith(mesPasado)) gastosMesPasado += data.monto;
+        });
+
+        // El saldo anterior es lo que sobró el mes pasado
+        saldoAnterior = sueldoMesPasado - gastosMesPasado;
+        if (sueldoMesPasado === 0) saldoAnterior = 0; // Si no hay datos del mes pasado, empezamos en 0
+
+        // --- 2. PROCESAR MES ACTUAL ---
+        listaGastos.innerHTML = '';
+        let totalGastosMesActual = 0;
+        const totalesPorCategoria = {};
+
 
     //recorremos cada gasto que nos devolvio firebase
     querySnapshot.forEach((doc) => {
@@ -119,7 +158,7 @@ async function cargarGastosDesdeFirebase() {
 
       //filtro solo procesamos si la fecha del gasto empieza con el mes seleccionado
       if (gasto.fecha.startsWith(mesSeleccionado)) {
-        totalSuma = totalSuma + gasto.monto;
+        totalGastosMesActual =+ gasto.monto;
 
         //2 resumen: sumamos la categoria correspondiente
         if (totalesPorCategoria[gasto.categoria]) {
@@ -145,7 +184,17 @@ async function cargarGastosDesdeFirebase() {
     for (const categoria in totalesPorCategoria) {
       divResumenCategorias.innerHTML += `<p><span>${categoria}</span> <strong>${totalesPorCategoria[categoria].toFixed(2)}</strong></p>`;
     }
-
+    // --- 3. MOSTRAR RESULTADOS FINALES ---
+        inputSueldo.value = sueldoMesActual;
+        
+        // Fórmula final: Saldo Anterior + Sueldo Nuevo - Gastos Actuales
+        const saldoFinal = saldoAnterior + sueldoMesActual - totalGastosMesActual;
+        
+        elementoTotal.innerText = `$${totalGastosMesActual.toFixed(2)}`;
+        elementoSaldo.innerHTML = `
+            <small style="display:block; font-size:12px;">Saldo Anterior: $${saldoAnterior.toFixed(2)}</small>
+            <span>Total: $${saldoFinal.toFixed(2)}</span>
+        `;
     // 3. CALCULAR SALDO
     const saldoFinal = sueldoActual - totalSuma;
     elementoSaldo.innerText = `$${saldoFinal.toFixed(2)}`;
