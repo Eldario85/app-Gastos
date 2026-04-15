@@ -32,6 +32,7 @@ const listaGastos = document.getElementById("lista-gastos");
 const elementoTotal = document.getElementById("total-mes");
 const inputMesFiltro = document.getElementById("mes-filtro");
 const divResumenCategorias = document.getElementById("resumen-categorias");
+let graficoVisual = null; // Variable para guardar nuestro gráfico
 
 //ponemos el mes actual por defecto en el filtro al cargar
 const fechaHoy = new Date();
@@ -136,6 +137,57 @@ async function cargarGastosDesdeFirebase() {
     for (const categoria in totalesPorCategoria) {
       divResumenCategorias.innerHTML += `<p><span>${categoria}</span> <strong>${totalesPorCategoria[categoria].toFixed(2)}</strong></p>`;
     }
+
+    // --- INICIO CÓDIGO DEL GRÁFICO ---
+
+    // 1. Convertimos nuestro objeto en dos listas separadas para el gráfico
+    // Etiquetas será: ["Comida", "Ferretería", "Transporte", etc.]
+    const etiquetasGrafico = Object.keys(totalesPorCategoria);
+    // Valores será: [1500, 4500, 800, etc.]
+    const valoresGrafico = Object.values(totalesPorCategoria);
+
+    // 2. Seleccionamos nuestro lienzo en el HTML
+    const contextoLienzo = document
+      .getElementById("miGrafico")
+      .getContext("2d");
+
+    // 3. Si ya había un gráfico dibujado de un mes anterior, lo destruimos
+    if (graficoVisual) {
+      graficoVisual.destroy();
+    }
+
+    // 4. ¡Dibujamos el nuevo gráfico!
+    graficoVisual = new Chart(contextoLienzo, {
+      type: "doughnut", // Tipo "dona" (queda muy bien en celulares)
+      data: {
+        labels: etiquetasGrafico,
+        datasets: [
+          {
+            data: valoresGrafico,
+            // Colores para cada categoría
+            backgroundColor: [
+              "#27ae60",
+              "#2980b9",
+              "#e67e22",
+              "#e74c3c",
+              "#8e44ad",
+              "#34495e",
+            ],
+            borderWidth: 2,
+            hoverOffset: 4,
+          },
+        ],
+      },
+      options: {
+        responsive: true,
+        plugins: {
+          legend: {
+            position: "bottom", // Leyenda abajo
+          },
+        },
+      },
+    });
+    // --- FIN CÓDIGO DEL GRÁFICO ---
 
     //le damos vida a los botones de borrar
     const botonesBorrar = document.querySelectorAll(".btn-borrar");

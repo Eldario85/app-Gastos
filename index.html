@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Control de gastos</title>
     <link rel="stylesheet" href="style.css" />
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   </head>
   <body>
     <div class="contenedor">
@@ -31,7 +32,9 @@
       <div class="resumen">
         <h2>Total: <span id="total-mes">$0</span></h2>
         <div id="resumen-categorias"></div>
+        <canvas id="miGrafico" style="margin-top: 20px"></canvas>
       </div>
+
       <h2>Historial</h2>
       <ul id="lista-gastos"></ul>
     </div>
