@@ -151,7 +151,7 @@ async function cargarGastosDesdeFirebase() {
 
 
     //recorremos cada gasto que nos devolvio firebase
-    querySnapshot.forEach((doc) => {
+    todosLosGastos.forEach((doc) => {
       //extraemos la informacion del documento
       const gasto = doc.data();
       const idGasto = doc.id; //el id secreto de firebase para poder borrarlo
@@ -196,7 +196,7 @@ async function cargarGastosDesdeFirebase() {
             <span>Total: $${saldoFinal.toFixed(2)}</span>
         `;
     // 3. CALCULAR SALDO
-    const saldoFinal = sueldoActual - totalSuma;
+    //const saldoFinal = sueldoActual - totalSuma;
     elementoSaldo.innerText = `$${saldoFinal.toFixed(2)}`;
 
     // Cambiar color si es negativo
