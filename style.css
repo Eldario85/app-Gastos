@@ -150,3 +150,36 @@ button:hover{
     display: flex;
     align-items: center;
 }
+
+.seccion-ingreso {
+    margin-bottom: 20px;
+    padding: 15px;
+    background-color: #ebf5fb;
+    border-radius: 8px;
+    border: 1px solid #d6eaf8;
+}
+
+.input-grupo {
+    display: flex;
+    gap: 10px;
+}
+
+.input-grupo input {
+    margin-bottom: 0;
+    flex-grow: 1;
+}
+
+#btn-guardar-sueldo {
+    padding: 5px 15px;
+    background-color: #2980b9;
+    font-size: 14px;
+}
+
+#saldo-disponible {
+    color: #27ae60; /* Verde por defecto */
+}
+
+/* Si el saldo es negativo, lo pondremos rojo con JS */
+.saldo-negativo {
+    color: #e74c3c !important;
+}

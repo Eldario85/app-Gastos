@@ -33,6 +33,9 @@ const elementoTotal = document.getElementById("total-mes");
 const inputMesFiltro = document.getElementById("mes-filtro");
 const divResumenCategorias = document.getElementById("resumen-categorias");
 let graficoVisual = null; // Variable para guardar nuestro gráfico
+const inputSueldo = document.getElementById("sueldo-input");
+const btnSueldo = document.getElementById("btn-guardar-sueldo");
+const elementoSaldo = document.getElementById("saldo-disponible");
 
 //ponemos el mes actual por defecto en el filtro al cargar
 const fechaHoy = new Date();
@@ -43,6 +46,19 @@ inputMesFiltro.value = mesActualString;
 inputMesFiltro.addEventListener("change", cargarGastosDesdeFirebase);
 
 let totalSuma = 0;
+
+btnSueldo.addEventListener("click", async () => {
+  const monto = parseFloat(inputSueldo.value);
+  if (!isNaN(monto)) {
+    // Guardaremos el sueldo en una colección especial llamada 'configuracion'
+    await addDoc(collection(db, "configuracion"), {
+      tipo: "sueldo",
+      monto: monto,
+      fecha: new Date(),
+    });
+    cargarGastosDesdeFirebase(); // Recargamos para actualizar el saldo
+  }
+});
 
 formulario.addEventListener("submit", async function (evento) {
   // Esto es vital: evita que la página web se recargue al enviar el formulario
@@ -70,21 +86,6 @@ formulario.addEventListener("submit", async function (evento) {
     formulario.reset();
 
     cargarGastosDesdeFirebase();
-    // //creamos visualmente el renglon para la lista del historial
-    // const nuevoElementoLista = document.createElement("li");
-
-    // nuevoElementoLista.innerHTML = `
-    //     <span><strong>${categoria}</strong> <br> <small>${fecha}</small></span>
-    //     <span style="color: #c0392b; font-weight: bold;">${monto.toFixed(2)}</span>`;
-
-    // //agregamos ese renglon a la lista
-    // listaGastos.appendChild(nuevoElementoLista);
-
-    // //actualizamos el numero del total del mes
-    // totalSuma = totalSuma + monto;
-    // elementoTotal.innerText = `${totalSuma.toFixed(2)}`;
-
-    // formulario.reset();
   } catch (error) {
     console.error("Error al guardar en Firebase: ", error);
     alert("Hubo un problema al guardar el gasto. Revisa la consola.");
@@ -93,6 +94,13 @@ formulario.addEventListener("submit", async function (evento) {
 
 async function cargarGastosDesdeFirebase() {
   try {
+    // 1. Traer el sueldo (buscamos el último ingresado)
+    const configSnapshot = await getDocs(collection(db, "configuracion"));
+    let sueldoActual = 0;
+    configSnapshot.forEach((doc) => {
+      if (doc.data().tipo === "sueldo") sueldoActual = doc.data().monto;
+    });
+    inputSueldo.value = sueldoActual;
     //le pedimos a firebase que nos traiga los documentos de la coleccion
     const querySnapshot = await getDocs(collection(db, "gastos"));
 
@@ -138,6 +146,16 @@ async function cargarGastosDesdeFirebase() {
       divResumenCategorias.innerHTML += `<p><span>${categoria}</span> <strong>${totalesPorCategoria[categoria].toFixed(2)}</strong></p>`;
     }
 
+    // 3. CALCULAR SALDO
+    const saldoFinal = sueldoActual - totalSuma;
+    elementoSaldo.innerText = `$${saldoFinal.toFixed(2)}`;
+
+    // Cambiar color si es negativo
+    if (saldoFinal < 0) {
+      elementoSaldo.classList.add("saldo-negativo");
+    } else {
+      elementoSaldo.classList.remove("saldo-negativo");
+    }
     // --- INICIO CÓDIGO DEL GRÁFICO ---
 
     // 1. Convertimos nuestro objeto en dos listas separadas para el gráfico

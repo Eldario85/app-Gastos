@@ -9,6 +9,20 @@
   </head>
   <body>
     <div class="contenedor">
+      <div class="seccion-ingreso">
+        <label for="sueldo-input">Mi Sueldo/Presupuesto:</label>
+        <div class="input-grupo">
+          <input type="number" id="sueldo-input" placeholder="Ej: 500000" />
+          <button id="btn-guardar-sueldo">Fijar</button>
+        </div>
+      </div>
+
+      <div class="resumen">
+        <h2>Saldo: <span id="saldo-disponible">$0</span></h2>
+        <p>Gastado: <span id="total-mes">$0</span></p>
+        <div id="resumen-categorias"></div>
+        <canvas id="miGrafico" style="margin-top: 20px"></canvas>
+      </div>
       <h1>Mis Gastos</h1>
       <form id="formulario-gastos">
         <label for="monto">Monto ($):</label>
