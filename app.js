@@ -124,25 +124,30 @@ async function cargarGastosDesdeFirebase() {
     let totalGastosMesActual = 0;
     const totalesPorCategoria = {};
 
-    todosLosGastos.forEach((doc) => {
+todosLosGastos.forEach((doc) => {
       const gasto = doc.data();
       const idGasto = doc.id;
 
-      if (gasto.fecha.startsWith(mesActual)) {
-        // CORRECCIÓN: += en lugar de =+
-        totalGastosMesActual += gasto.monto;
+      if (gasto.fecha && gasto.fecha.startsWith(mesActual)) {
+        
+        // --- LA DEFENSA ---
+        // Nos aseguramos de que el monto sea un número. Si viene vacío o corrupto, lo convertimos en 0.
+        const montoLimpio = Number(gasto.monto) || 0;
+
+        totalGastosMesActual += montoLimpio;
 
         if (totalesPorCategoria[gasto.categoria]) {
-          totalesPorCategoria[gasto.categoria] += gasto.monto;
+          totalesPorCategoria[gasto.categoria] += montoLimpio;
         } else {
-          totalesPorCategoria[gasto.categoria] = gasto.monto;
+          totalesPorCategoria[gasto.categoria] = montoLimpio;
         }
-
+        
+        // Para crear el elemento en la lista usamos montoLimpio en vez de gasto.monto
         const nuevoElementoLista = document.createElement("li");
         nuevoElementoLista.innerHTML = `
         <span><strong>${gasto.categoria}</strong> <br> <small>${gasto.fecha}</small></span>
         <div>
-        <span style="color: #c0392b; font-weight: bold;">$${gasto.monto.toFixed(2)}</span>
+        <span style="color: #c0392b; font-weight: bold;">$${montoLimpio.toFixed(2)}</span>
         <button class="btn-borrar" data-id="${idGasto}">X</button>
         </div>`;
         listaGastos.appendChild(nuevoElementoLista);
