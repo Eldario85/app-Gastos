@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Control de gastos</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <div class="contenedor">
+      <h1>Mis Gastos</h1>
+      <form id="formulario-gastos">
+        <label for="monto">Monto ($):</label>
+        <input type="number" id="monto" placeholder="Ej: 1500" required />
+        <label for="categoria">Categoria:</label>
+        <select id="categoria" required>
+          <option value="Comida">Comida</option>
+          <option value="Transporte">Transporte</option>
+          <option value="Servicios">Servicios</option>
+          <option value="Ocio">Ocio</option>
+          <option value="Otros">Otros</option>
+        </select>
+        <label for="fecha">Fecha:</label>
+        <input type="date" id="fecha" required />
+        <button type="submit">Guardar Gasto</button>
+      </form>
+      <div class="control-mes">
+        <label for="mes-filtro">Ver mes:</label>
+        <input type="month" id="mes-filtro" />
+      </div>
+      <div class="resumen">
+        <h2>Total: <span id="total-mes">$0</span></h2>
+        <div id="resumen-categorias"></div>
+      </div>
+      <h2>Historial</h2>
+      <ul id="lista-gastos"></ul>
+    </div>
+    <script type="module" src="app.js"></script>
+  </body>
+</html>

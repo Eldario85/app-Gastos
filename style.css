@@ -1,0 +1,152 @@
+/* Reseteamos márgenes básicos para que se vea igual en todos los navegadores */
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body{
+    /* Una fuente limpia y moderna */
+    font-family: 'Segoe UI', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    /* Un fondo gris muy clarito para que la app resalte */
+    background-color: #f4f7f6;
+    color: #333;
+    /* Centramos la app en la pantalla de la PC */
+    display: flex;
+    justify-content: center;
+    padding: 20px;
+}
+
+.contenedor{
+    background-color: #ffffff;
+    width: 100%; /* Limitamos el ancho para que parezca la pantalla de un celular */
+    max-width: 400px;
+    padding: 20px;
+    border-radius: 12px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.1); /* Una sombra sutil */
+}
+
+h1, h2 {
+    text-align: center;
+    margin-bottom: 20px;
+    color: #2c3e50;
+}
+
+form{
+    display: flex;
+    flex-direction: column;
+}
+
+label{
+    margin-bottom: 5px;
+    font-weight: bold;
+    font-size: 14px;
+    color: #555;
+}
+
+input, select{
+    padding: 12px;
+    margin-bottom: 15px;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    font-size: 16px; /* Importante: 16px evita que los celulares hagan zoom al escribir */
+    background-color: #f9f9f9;
+}
+
+input:focus, select:focus {
+    outline: none;
+    border-color: #27ae60;
+}
+
+button{
+    background-color: #27ae60; /* Un verde de "finanzas/guardar" */
+    color: white;
+    padding: 15px;
+    border: none;
+    border-radius: 8px;
+    font-size: 16px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: background-color 0.3s; /* Efecto suave al pasar el mouse */
+}
+
+button:hover{
+    background-color: #219150;
+}
+
+.resumen{
+    background-color: #e8f8f5;
+    padding: 15px;
+    border-radius: 8px;
+    margin: 25px 0;
+    text-align: center;
+    border: 1px solid #d1f2eb;
+    color: #0e6251;
+}
+
+/* Estilos para cuando agreguemos la lista de gastos con JavaScript */
+#lista-gastos{
+    list-style-type: none;
+}
+
+#lista-gastos li{
+    background-color: #fff;
+    padding: 12px;
+    border-bottom: 1px solid #eee;
+    display: flex;
+    justify-content: space-between; /* Separa el texto a la izquierda y el monto a la derecha */
+    align-items: center;
+    font-size: 15px;
+}
+
+#lista-gastos li:last-child {
+    border-bottom: none;
+}
+
+.control-mes{
+    text-align: center;
+    margin-bottom: 20px;
+}
+
+.control-mes input{
+    margin-bottom: 0;
+    margin-left: 10px;
+    padding: 8px;
+}
+
+#resumen-categorias{
+    margin-top: 15px;
+    border-top: 1px dashed #27ae60;
+    padding-top: 10px;
+}
+
+#resumen-categorias p{
+    font-size: 14px;
+    color: #555;
+    margin: 5px 0;
+    display: flex;
+    justify-content: space-between; 
+}
+
+/*estilo boton borrar*/
+.btn-borrar{
+    background-color: #e74c3c;
+    color: white;
+    border: none;
+    padding: 5px 10px;
+    margin-left: 15px;
+    border-radius: 5px;
+    cursor: pointer;
+    font-weight: bold;
+    font-size: 12px;
+}
+
+.btn-borrar:hover{
+    background-color: #c0392b;   
+}
+
+/*ajustamos el layout de la lista para acomodar el boton*/
+#lista-gastos li div{
+    display: flex;
+    align-items: center;
+}
