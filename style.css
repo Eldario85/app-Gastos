@@ -198,8 +198,8 @@ body.dark-mode input, body.dark-mode select {
     color: white;
     border-color: #555;
 }
-body.dark-mode h1, body.dark-mode h2 { color: #fff; }
-body.dark-mode #lista-gastos li { border-bottom-color: #333; }
+body.dark-mode h1, body.dark-mode h2 { color: #4b4a4a; }
+body.dark-mode #lista-gastos li span { border-bottom-color: #333; }
 
 /* --- BOTÓN EDITAR --- */
 .btn-editar {

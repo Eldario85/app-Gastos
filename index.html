@@ -90,13 +90,16 @@
         />
         <label for="fecha">Fecha:</label>
         <input type="date" id="fecha" required />
-        <label for="descripcion">Descripción (opcional):</label>
-        <input
-          type="text"
-          id="descripcion"
-          placeholder="Ej: Compra en el supermercado..."
-        />
+        <button type="submit" id="btn-submit-gasto">Guardar Gasto</button>
+        <button
+          type="button"
+          id="btn-cancelar-edicion"
+          style="display: none; background-color: #95a5a6; margin-top: 10px"
+        >
+          Cancelar Edición
+        </button>
       </form>
+
       <div class="control-mes">
         <label for="mes-filtro">Ver mes:</label>
         <input type="month" id="mes-filtro" />
