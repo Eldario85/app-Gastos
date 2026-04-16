@@ -243,7 +243,9 @@ async function cargarGastosDesdeFirebase() {
 
     // Inyectamos el total garantizado
     document.getElementById("total-mes").innerText =
-      `$${sumaGarantizada.toFixed(2)}`;
+      `${sumaGarantizada.toFixed(2)}`;
+    document.getElementById("total-mesgasto").innerText =
+      `${sumaGarantizada.toFixed(2)}`;
 
     // Dibujar Gráfico
     const etiquetasGrafico = Object.keys(totalesPorCategoria);
