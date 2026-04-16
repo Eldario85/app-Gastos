@@ -57,17 +57,25 @@ inputMesFiltro.value = mesActualString;
 // Recargar al cambiar de mes
 inputMesFiltro.addEventListener("change", cargarGastosDesdeFirebase);
 
+const seccionLogin = document.getElementById("pantalla-login");
+const seccionApp = document.getElementById("app-principal");
+const btnIngresar = document.getElementById("btn-ingresar-google");
+
+// CONECTOR: El botón ahora dispara el popup manualmente
+btnIngresar.addEventListener("click", iniciarSesion);
+
 onAuthStateChanged(auth, (user) => {
   if (user) {
     // Si hay usuario, guardamos sus datos y cargamos su info
     usuarioActual = user;
-    console.log("Sesión activa de:", user.displayName);
+    seccionLogin.style.display = "none"; // Ocultamos login
+    seccionApp.style.display = "block"; // Mostramos la app
     cargarGastosDesdeFirebase();
   } else {
     // Si no hay usuario, mandamos a loguear
     usuarioActual = null;
-    alert("Inicia sesión para ver tus gastos");
-    iniciarSesion();
+    seccionLogin.style.display = "block"; // Mostramos login
+    seccionApp.style.display = "none"; // Ocultamos la app
   }
 });
 
@@ -76,6 +84,7 @@ async function iniciarSesion() {
     await signInWithPopup(auth, provider);
   } catch (error) {
     console.error("Error al iniciar sesión:", error);
+    alert("No se pudo iniciar sesión. Revisa si el popup fue bloqueado.");
   }
 }
 
