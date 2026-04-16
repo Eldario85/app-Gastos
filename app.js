@@ -144,25 +144,23 @@ formulario.addEventListener("submit", async function (evento) {
 // --- FUNCIÓN PRINCIPAL: LEER Y CALCULAR ---
 async function cargarGastosDesdeFirebase() {
   try {
+    // Si no hay nadie logueado, cortamos la ejecución por seguridad
+    if (!usuarioActual) return;
+
     const mesActual = inputMesFiltro.value;
 
-    // 1. CALCULAR MES PASADO PARA EL ARRASTRE
+    // --- 1. CALCULAR MES PASADO PARA EL ARRASTRE ---
     const fechaAux = new Date(mesActual + "-01");
     fechaAux.setMonth(fechaAux.getMonth() - 1);
     const mesPasado = `${fechaAux.getFullYear()}-${String(fechaAux.getMonth() + 1).padStart(2, "0")}`;
 
-    // Si no hay usuario logueado, detenemos la función aquí mismo
-    if (!usuarioActual) return;
-
-    // 1. Armamos la consulta: "Busca en la colección gastos DONDE el autorId sea igual al mío"
+    // --- 2. PEDIMOS A FIREBASE SOLO NUESTROS DATOS (Seguridad total) ---
     const consultaGastos = query(
       collection(db, "gastos"),
       where("autorId", "==", usuarioActual.uid),
     );
-    // Pedimos los gastos usando esa consulta específica
     const todosLosGastos = await getDocs(consultaGastos);
 
-    // 2. Hacemos exactamente lo mismo para los sueldos
     const consultaSueldos = query(
       collection(db, "presupuestos"),
       where("autorId", "==", usuarioActual.uid),
@@ -174,45 +172,34 @@ async function cargarGastosDesdeFirebase() {
     let gastosMesPasado = 0;
     let sueldoMesPasado = 0;
 
-    // Buscar sueldos en la base de datos
+    // Calculamos el sueldo y arrastre
     todosLosSueldos.forEach((doc) => {
-      const data = doc.data();
-      if (data.mes === mesActual) sueldoMesActual = data.monto;
-      if (data.mes === mesPasado) sueldoMesPasado = data.monto;
+      const presupuesto = doc.data();
+      if (presupuesto.mes === mesActual) sueldoMesActual = presupuesto.monto;
+      if (presupuesto.mes === mesPasado) sueldoMesPasado = presupuesto.monto;
     });
 
-    // Calcular gastos del mes pasado
     todosLosGastos.forEach((doc) => {
-      const data = doc.data();
-      if (
-        gasto.autorId === usuarioActual.uid &&
-        data.fecha.startsWith(mesPasado)
-      )
-        gastosMesPasado += data.monto;
+      const gasto = doc.data(); // AQUÍ ESTÁ LA LÍNEA QUE TE FALTABA
+      if (gasto.fecha && gasto.fecha.startsWith(mesPasado)) {
+        gastosMesPasado += Number(gasto.monto) || 0;
+      }
     });
 
-    // Determinar lo que sobró el mes pasado
     saldoAnterior = sueldoMesPasado - gastosMesPasado;
     if (sueldoMesPasado === 0) saldoAnterior = 0;
 
-    // 2. PROCESAR MES ACTUAL
+    // --- 3. PROCESAR MES ACTUAL ---
     listaGastos.innerHTML = "";
     let totalGastosMesActual = 0;
     const totalesPorCategoria = {};
 
     todosLosGastos.forEach((doc) => {
-      const gasto = doc.data();
+      const gasto = doc.data(); // ¡Y TAMBIÉN AQUÍ!
       const idGasto = doc.id;
 
-      if (
-        gasto.autorId === usuarioActual.uid &&
-        gasto.fecha &&
-        gasto.fecha.startsWith(mesActual)
-      ) {
-        // --- LA DEFENSA ---
-        // Nos aseguramos de que el monto sea un número. Si viene vacío o corrupto, lo convertimos en 0.
+      if (gasto.fecha && gasto.fecha.startsWith(mesActual)) {
         const montoLimpio = Number(gasto.monto) || 0;
-
         totalGastosMesActual += montoLimpio;
 
         if (totalesPorCategoria[gasto.categoria]) {
@@ -221,7 +208,6 @@ async function cargarGastosDesdeFirebase() {
           totalesPorCategoria[gasto.categoria] = montoLimpio;
         }
 
-        // Para crear el elemento en la lista usamos montoLimpio en vez de gasto.monto
         const nuevoElementoLista = document.createElement("li");
         nuevoElementoLista.innerHTML = `
         <span><strong>${gasto.categoria}</strong> <br> <small>${gasto.fecha}</small></span>
@@ -233,43 +219,33 @@ async function cargarGastosDesdeFirebase() {
       }
     });
 
-    // 3. MOSTRAR RESULTADOS FINALES
+    // --- 4. MOSTRAR RESULTADOS Y GRÁFICO ---
     inputSueldo.value = sueldoMesActual;
-
-    // Fórmula final: Saldo Anterior + Sueldo Nuevo - Gastos Actuales
     const saldoFinal = saldoAnterior + sueldoMesActual - totalGastosMesActual;
 
-    // Actualizar textos en pantalla
-    document.getElementById("total-mesgasto").innerText =
-      `${totalGastosMesActual.toFixed(2)}`;
-
-    // CORRECCIÓN: Solo usamos innerHTML para mostrar ambas líneas, eliminamos el innerText viejo
     elementoSaldo.innerHTML = `
-      <small style="display:block; font-size:12px; color: #555;">Saldo Anterior (Arrastre): ${saldoAnterior.toFixed(2)}</small>
-      <span>Saldo Actual: ${saldoFinal.toFixed(2)}</span>
+      <small style="display:block; font-size:12px; color: #555;">Saldo Anterior (Arrastre): $${saldoAnterior.toFixed(2)}</small>
+      <span>Saldo Actual: $${saldoFinal.toFixed(2)}</span>
     `;
 
-    // Cambiar color a rojo si hay deuda
     if (saldoFinal < 0) {
       elementoSaldo.classList.add("saldo-negativo");
     } else {
       elementoSaldo.classList.remove("saldo-negativo");
     }
 
-    // 4. RESUMEN DE CATEGORÍAS EN TEXTO
     divResumenCategorias.innerHTML = "";
-    // Creamos una variable nueva y limpia
     let sumaGarantizada = 0;
     for (const categoria in totalesPorCategoria) {
       divResumenCategorias.innerHTML += `<p><span>${categoria}</span> <strong>$${totalesPorCategoria[categoria].toFixed(2)}</strong></p>`;
-      // Sumamos el valor comprobado a nuestra variable
       sumaGarantizada += totalesPorCategoria[categoria];
     }
-    console.log(sumaGarantizada);
-    // Inyectamos el total directamente en el HTML
-    elementoTotal.innerHTML = `${sumaGarantizada.toFixed(2)}`;
 
-    // 5. GRÁFICO (Chart.js)
+    // Inyectamos el total garantizado
+    document.getElementById("total-mes").innerText =
+      `$${sumaGarantizada.toFixed(2)}`;
+
+    // Dibujar Gráfico
     const etiquetasGrafico = Object.keys(totalesPorCategoria);
     const valoresGrafico = Object.values(totalesPorCategoria);
     const contextoLienzo = document
@@ -302,13 +278,10 @@ async function cargarGastosDesdeFirebase() {
       },
       options: {
         responsive: true,
-        plugins: {
-          legend: { position: "bottom" },
-        },
+        plugins: { legend: { position: "bottom" } },
       },
     });
 
-    // 6. EVENTOS DE LOS BOTONES DE BORRAR
     const botonesBorrar = document.querySelectorAll(".btn-borrar");
     botonesBorrar.forEach((boton) => {
       boton.addEventListener("click", async function (evento) {
