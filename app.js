@@ -8,14 +8,13 @@ import {
   doc,
   query,
   where,
+  updateDoc, // <-- NUEVO: updateDoc
 } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
-
 import {
   getAuth,
   signInWithPopup,
   GoogleAuthProvider,
   onAuthStateChanged,
-  signOut,
 } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 
 // Configuración de Firebase
@@ -28,133 +27,142 @@ const firebaseConfig = {
   appId: "1:88306124090:web:66d278ff6e23a2edae3c03",
 };
 
-// Inicializar Firebase
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
-
 const auth = getAuth(app);
 const provider = new GoogleAuthProvider();
-let usuarioActual = null; // Aquí guardaremos quién está usando la app
 
-// Seleccionamos los elementos HTML
+// Elementos del DOM
+const seccionLogin = document.getElementById("pantalla-login");
+const seccionApp = document.getElementById("app-principal");
+const btnIngresar = document.getElementById("btn-ingresar-google");
+
 const formulario = document.getElementById("formulario-gastos");
 const inputMonto = document.getElementById("monto");
 const inputCategoria = document.getElementById("categoria");
+const inputDescripcion = document.getElementById("descripcion"); // <-- NUEVO
 const inputFecha = document.getElementById("fecha");
+const btnSubmitGasto = document.getElementById("btn-submit-gasto");
+const btnCancelarEdicion = document.getElementById("btn-cancelar-edicion");
+
 const listaGastos = document.getElementById("lista-gastos");
-const elementoTotal = document.getElementById("total-mes");
 const inputMesFiltro = document.getElementById("mes-filtro");
 const divResumenCategorias = document.getElementById("resumen-categorias");
 const inputSueldo = document.getElementById("sueldo-input");
 const btnSueldo = document.getElementById("btn-guardar-sueldo");
 const elementoSaldo = document.getElementById("saldo-disponible");
+const btnModoOscuro = document.getElementById("btn-modo-oscuro"); // <-- NUEVO
+const btnExportar = document.getElementById("btn-exportar"); // <-- NUEVO
 
+// Variables de Estado
+let usuarioActual = null;
 let graficoVisual = null;
+let idGastoEnEdicion = null; // <-- NUEVO: Para saber si estamos editando
 
-// Ponemos el mes actual por defecto
+// Inicialización de Fecha
 const fechaHoy = new Date();
-const mesActualString = `${fechaHoy.getFullYear()}-${String(fechaHoy.getMonth() + 1).padStart(2, "0")}`;
-inputMesFiltro.value = mesActualString;
-
-// Recargar al cambiar de mes
+inputMesFiltro.value = `${fechaHoy.getFullYear()}-${String(fechaHoy.getMonth() + 1).padStart(2, "0")}`;
 inputMesFiltro.addEventListener("change", cargarGastosDesdeFirebase);
 
-const seccionLogin = document.getElementById("pantalla-login");
-const seccionApp = document.getElementById("app-principal");
-const btnIngresar = document.getElementById("btn-ingresar-google");
+// --- MODO OSCURO ---
+btnModoOscuro.addEventListener("click", () => {
+  document.body.classList.toggle("dark-mode");
+  if (document.body.classList.contains("dark-mode")) {
+    btnModoOscuro.innerText = "☀️";
+  } else {
+    btnModoOscuro.innerText = "🌙";
+  }
+});
 
-// Al poner la función directamente adentro del clic, los navegadores no la bloquean
+// --- AUTENTICACIÓN ---
 btnIngresar.addEventListener("click", function () {
-  signInWithPopup(auth, provider)
-    .then((resultado) => {
-      console.log("¡Sesión iniciada con éxito!", resultado.user.displayName);
-      // No necesitamos hacer nada más aquí, el onAuthStateChanged se encargará de mostrar la app
-    })
-    .catch((error) => {
-      console.error("Error al iniciar sesión:", error);
-      alert("Hubo un error: " + error.message); // Esto nos dirá exactamente qué falla si hay un problema
-    });
+  signInWithPopup(auth, provider).catch((error) =>
+    alert("Hubo un error: " + error.message),
+  );
 });
 
 onAuthStateChanged(auth, (user) => {
   if (user) {
-    // Si hay usuario, guardamos sus datos y cargamos su info
     usuarioActual = user;
-    seccionLogin.style.display = "none"; // Ocultamos login
-    seccionApp.style.display = "block"; // Mostramos la app
+    seccionLogin.style.display = "none";
+    seccionApp.style.display = "block";
     cargarGastosDesdeFirebase();
   } else {
-    // Si no hay usuario, mandamos a loguear
     usuarioActual = null;
-    seccionLogin.style.display = "block"; // Mostramos login
-    seccionApp.style.display = "none"; // Ocultamos la app
+    seccionLogin.style.display = "block";
+    seccionApp.style.display = "none";
   }
 });
 
-// async function iniciarSesion() {
-//   try {
-//     await signInWithRedirect(auth, provider);
-//   } catch (error) {
-//     console.error("Error al iniciar sesión:", error);
-//     alert("No se pudo iniciar sesión. Revisa si el popup fue bloqueado.");
-//   }
-// }
-
-// --- EVENTO: GUARDAR SUELDO ---
+// --- GUARDAR SUELDO ---
 btnSueldo.addEventListener("click", async () => {
   const monto = parseFloat(inputSueldo.value);
   const mesSeleccionado = inputMesFiltro.value;
-  if (!isNaN(monto) && mesSeleccionado) {
+  if (!isNaN(monto) && mesSeleccionado && usuarioActual) {
     await addDoc(collection(db, "presupuestos"), {
       mes: mesSeleccionado,
       monto: monto,
-      fechaCreacion: new Date(),
       autorId: usuarioActual.uid,
+      fechaCreacion: new Date(),
     });
-    alert("Sueldo de " + mesSeleccionado + " guardado.");
+    alert("Sueldo guardado.");
     cargarGastosDesdeFirebase();
   }
 });
 
-// --- EVENTO: GUARDAR GASTO ---
+// --- GUARDAR O ACTUALIZAR GASTO ---
 formulario.addEventListener("submit", async function (evento) {
   evento.preventDefault();
+  if (!usuarioActual) return;
 
-  const monto = parseFloat(inputMonto.value);
-  const categoria = inputCategoria.value;
-  const fecha = inputFecha.value;
+  const datosGasto = {
+    monto: parseFloat(inputMonto.value),
+    categoria: inputCategoria.value,
+    descripcion: inputDescripcion.value || "", // Guarda vacío si no escriben nada
+    fecha: inputFecha.value,
+    autorId: usuarioActual.uid,
+    ultimaModificacion: new Date(),
+  };
 
   try {
-    await addDoc(collection(db, "gastos"), {
-      monto: monto,
-      categoria: categoria,
-      fecha: fecha,
-      autorId: usuarioActual.uid, // <--- LA ETIQUETA MÁGICA
-      creadoEn: new Date(),
-    });
+    if (idGastoEnEdicion) {
+      // MODO EDICIÓN
+      await updateDoc(doc(db, "gastos", idGastoEnEdicion), datosGasto);
+      idGastoEnEdicion = null;
+      btnSubmitGasto.innerText = "Guardar Gasto";
+      btnCancelarEdicion.style.display = "none";
+    } else {
+      // MODO CREACIÓN NORMAL
+      datosGasto.creadoEn = new Date();
+      await addDoc(collection(db, "gastos"), datosGasto);
+    }
 
     formulario.reset();
     cargarGastosDesdeFirebase();
   } catch (error) {
-    console.error("Error al guardar en Firebase: ", error);
-    alert("Hubo un problema al guardar el gasto.");
+    console.error("Error al guardar: ", error);
+    alert("Hubo un problema al procesar el gasto.");
   }
 });
 
-// --- FUNCIÓN PRINCIPAL: LEER Y CALCULAR ---
+// --- CANCELAR EDICIÓN ---
+btnCancelarEdicion.addEventListener("click", () => {
+  idGastoEnEdicion = null;
+  formulario.reset();
+  btnSubmitGasto.innerText = "Guardar Gasto";
+  btnCancelarEdicion.style.display = "none";
+});
+
+// --- LECTURA PRINCIPAL ---
 async function cargarGastosDesdeFirebase() {
+  if (!usuarioActual) return;
+
   try {
-    // Si no hay nadie logueado, cortamos la ejecución por seguridad
-    if (!usuarioActual) return;
-
     const mesActual = inputMesFiltro.value;
-
-    // --- 1. CALCULAR MES PASADO PARA EL ARRASTRE ---
     const fechaAux = new Date(mesActual + "-01");
     fechaAux.setMonth(fechaAux.getMonth() - 1);
     const mesPasado = `${fechaAux.getFullYear()}-${String(fechaAux.getMonth() + 1).padStart(2, "0")}`;
 
-    // --- 2. PEDIMOS A FIREBASE SOLO NUESTROS DATOS (Seguridad total) ---
     const consultaGastos = query(
       collection(db, "gastos"),
       where("autorId", "==", usuarioActual.uid),
@@ -172,30 +180,27 @@ async function cargarGastosDesdeFirebase() {
     let gastosMesPasado = 0;
     let sueldoMesPasado = 0;
 
-    // Calculamos el sueldo y arrastre
     todosLosSueldos.forEach((doc) => {
-      const presupuesto = doc.data();
-      if (presupuesto.mes === mesActual) sueldoMesActual = presupuesto.monto;
-      if (presupuesto.mes === mesPasado) sueldoMesPasado = presupuesto.monto;
+      const p = doc.data();
+      if (p.mes === mesActual) sueldoMesActual = p.monto;
+      if (p.mes === mesPasado) sueldoMesPasado = p.monto;
     });
 
     todosLosGastos.forEach((doc) => {
-      const gasto = doc.data(); // AQUÍ ESTÁ LA LÍNEA QUE TE FALTABA
-      if (gasto.fecha && gasto.fecha.startsWith(mesPasado)) {
-        gastosMesPasado += Number(gasto.monto) || 0;
-      }
+      const g = doc.data();
+      if (g.fecha && g.fecha.startsWith(mesPasado))
+        gastosMesPasado += Number(g.monto) || 0;
     });
 
     saldoAnterior = sueldoMesPasado - gastosMesPasado;
     if (sueldoMesPasado === 0) saldoAnterior = 0;
 
-    // --- 3. PROCESAR MES ACTUAL ---
     listaGastos.innerHTML = "";
     let totalGastosMesActual = 0;
     const totalesPorCategoria = {};
 
     todosLosGastos.forEach((doc) => {
-      const gasto = doc.data(); // ¡Y TAMBIÉN AQUÍ!
+      const gasto = doc.data();
       const idGasto = doc.id;
 
       if (gasto.fecha && gasto.fecha.startsWith(mesActual)) {
@@ -208,63 +213,56 @@ async function cargarGastosDesdeFirebase() {
           totalesPorCategoria[gasto.categoria] = montoLimpio;
         }
 
-        const nuevoElementoLista = document.createElement("li");
-        nuevoElementoLista.innerHTML = `
-        <span><strong>${gasto.categoria}</strong> <br> <small>${gasto.fecha}</small></span>
+        // DIBUJAMOS LA LISTA CON DESCRIPCIÓN Y BOTÓN EDITAR
+        const descripcionHTML = gasto.descripcion
+          ? `<em>${gasto.descripcion}</em><br>`
+          : "";
+
+        const li = document.createElement("li");
+        li.innerHTML = `
+        <span><strong>${gasto.categoria}</strong> <br> ${descripcionHTML} <small>${gasto.fecha}</small></span>
         <div>
-        <span style="color: #c0392b; font-weight: bold;">$${montoLimpio.toFixed(2)}</span>
-        <button class="btn-borrar" data-id="${idGasto}">X</button>
+            <span style="color: #c0392b; font-weight: bold;">$${montoLimpio.toFixed(2)}</span>
+            <button class="btn-editar" data-id="${idGasto}" data-monto="${montoLimpio}" data-cat="${gasto.categoria}" data-desc="${gasto.descripcion || ""}" data-fecha="${gasto.fecha}">✏️</button>
+            <button class="btn-borrar" data-id="${idGasto}">X</button>
         </div>`;
-        listaGastos.appendChild(nuevoElementoLista);
+        listaGastos.appendChild(li);
       }
     });
 
-    // --- 4. MOSTRAR RESULTADOS Y GRÁFICO ---
     inputSueldo.value = sueldoMesActual;
     const saldoFinal = saldoAnterior + sueldoMesActual - totalGastosMesActual;
 
     elementoSaldo.innerHTML = `
       <small style="display:block; font-size:12px; color: #555;">Saldo Anterior (Arrastre): $${saldoAnterior.toFixed(2)}</small>
-      <span>Saldo Actual: $${saldoFinal.toFixed(2)}</span>
+      <span>Saldo Actual: ${saldoFinal.toFixed(2)}</span>
     `;
 
-    if (saldoFinal < 0) {
-      elementoSaldo.classList.add("saldo-negativo");
-    } else {
-      elementoSaldo.classList.remove("saldo-negativo");
-    }
+    if (saldoFinal < 0) elementoSaldo.classList.add("saldo-negativo");
+    else elementoSaldo.classList.remove("saldo-negativo");
 
     divResumenCategorias.innerHTML = "";
     let sumaGarantizada = 0;
-    for (const categoria in totalesPorCategoria) {
-      divResumenCategorias.innerHTML += `<p><span>${categoria}</span> <strong>$${totalesPorCategoria[categoria].toFixed(2)}</strong></p>`;
-      sumaGarantizada += totalesPorCategoria[categoria];
+    for (const cat in totalesPorCategoria) {
+      divResumenCategorias.innerHTML += `<p><span>${cat}</span> <strong>$${totalesPorCategoria[cat].toFixed(2)}</strong></p>`;
+      sumaGarantizada += totalesPorCategoria[cat];
     }
 
-    // Inyectamos el total garantizado
     document.getElementById("total-mes").innerText =
       `${sumaGarantizada.toFixed(2)}`;
     document.getElementById("total-mesgasto").innerText =
       `${sumaGarantizada.toFixed(2)}`;
 
-    // Dibujar Gráfico
-    const etiquetasGrafico = Object.keys(totalesPorCategoria);
-    const valoresGrafico = Object.values(totalesPorCategoria);
-    const contextoLienzo = document
-      .getElementById("miGrafico")
-      .getContext("2d");
-
-    if (graficoVisual) {
-      graficoVisual.destroy();
-    }
-
-    graficoVisual = new Chart(contextoLienzo, {
+    // GRÁFICO
+    const ctx = document.getElementById("miGrafico").getContext("2d");
+    if (graficoVisual) graficoVisual.destroy();
+    graficoVisual = new Chart(ctx, {
       type: "doughnut",
       data: {
-        labels: etiquetasGrafico,
+        labels: Object.keys(totalesPorCategoria),
         datasets: [
           {
-            data: valoresGrafico,
+            data: Object.values(totalesPorCategoria),
             backgroundColor: [
               "#27ae60",
               "#2980b9",
@@ -272,9 +270,10 @@ async function cargarGastosDesdeFirebase() {
               "#e74c3c",
               "#8e44ad",
               "#34495e",
+              "#f1c40f",
+              "#1abc9c",
             ],
             borderWidth: 2,
-            hoverOffset: 4,
           },
         ],
       },
@@ -284,14 +283,30 @@ async function cargarGastosDesdeFirebase() {
       },
     });
 
-    const botonesBorrar = document.querySelectorAll(".btn-borrar");
-    botonesBorrar.forEach((boton) => {
-      boton.addEventListener("click", async function (evento) {
-        const idParaBorrar = evento.target.getAttribute("data-id");
-        if (confirm("¿Seguro que quieres borrar este gasto?")) {
-          await deleteDoc(doc(db, "gastos", idParaBorrar));
+    // ACTIVAR BOTONES DE BORRAR Y EDITAR
+    document.querySelectorAll(".btn-borrar").forEach((btn) => {
+      btn.addEventListener("click", async (e) => {
+        if (confirm("¿Borrar este gasto?")) {
+          await deleteDoc(doc(db, "gastos", e.target.getAttribute("data-id")));
           cargarGastosDesdeFirebase();
         }
+      });
+    });
+
+    document.querySelectorAll(".btn-editar").forEach((btn) => {
+      btn.addEventListener("click", (e) => {
+        const target = e.target;
+        // Llenamos el formulario con los datos viejos
+        inputMonto.value = target.getAttribute("data-monto");
+        inputCategoria.value = target.getAttribute("data-cat");
+        inputDescripcion.value = target.getAttribute("data-desc");
+        inputFecha.value = target.getAttribute("data-fecha");
+
+        // Cambiamos el estado a "Edición"
+        idGastoEnEdicion = target.getAttribute("data-id");
+        btnSubmitGasto.innerText = "Actualizar Gasto";
+        btnCancelarEdicion.style.display = "inline-block";
+        window.scrollTo(0, 0); // Sube la pantalla al formulario
       });
     });
   } catch (error) {
@@ -299,5 +314,38 @@ async function cargarGastosDesdeFirebase() {
   }
 }
 
-// Ejecutar al iniciar
-// cargarGastosDesdeFirebase();
+// --- EXPORTAR A EXCEL (CSV) ---
+btnExportar.addEventListener("click", async () => {
+  if (!usuarioActual) return;
+
+  const mesActual = inputMesFiltro.value;
+  const consultaGastos = query(
+    collection(db, "gastos"),
+    where("autorId", "==", usuarioActual.uid),
+  );
+  const snapshot = await getDocs(consultaGastos);
+
+  // Encabezados del Excel
+  let csvContent = "Fecha,Categoria,Descripcion,Monto\n";
+
+  snapshot.forEach((doc) => {
+    const g = doc.data();
+    if (g.fecha && g.fecha.startsWith(mesActual)) {
+      // Limpiamos comas en textos para que no rompan el Excel
+      const desc = g.descripcion ? g.descripcion.replace(/,/g, " ") : "";
+      const cat = g.categoria ? g.categoria.replace(/,/g, " ") : "";
+      csvContent += `${g.fecha},${cat},${desc},${g.monto}\n`;
+    }
+  });
+
+  // Crear el archivo descargable
+  const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+  const link = document.createElement("a");
+  const url = URL.createObjectURL(blob);
+  link.setAttribute("href", url);
+  link.setAttribute("download", `MisGastos_${mesActual}.csv`);
+  link.style.visibility = "hidden";
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+});

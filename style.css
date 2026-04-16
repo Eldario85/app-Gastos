@@ -183,3 +183,34 @@ button:hover{
 .saldo-negativo {
     color: #e74c3c !important;
 }
+
+/* --- MODO OSCURO --- */
+body.dark-mode {
+    background-color: #121212;
+    color: #e0e0e0;
+}
+body.dark-mode .contenedor, body.dark-mode .seccion-ingreso, body.dark-mode #pantalla-login {
+    background-color: #1e1e1e;
+    border-color: #333;
+}
+body.dark-mode input, body.dark-mode select {
+    background-color: #333;
+    color: white;
+    border-color: #555;
+}
+body.dark-mode h1, body.dark-mode h2 { color: #fff; }
+body.dark-mode #lista-gastos li { border-bottom-color: #333; }
+
+/* --- BOTÓN EDITAR --- */
+.btn-editar {
+    background-color: #f39c12;
+    color: white;
+    border: none;
+    padding: 5px 10px;
+    margin-left: 5px;
+    border-radius: 5px;
+    cursor: pointer;
+    font-weight: bold;
+    font-size: 12px;
+}
+.btn-editar:hover { background-color: #e67e22; }

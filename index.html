@@ -8,6 +8,20 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   </head>
   <body>
+    <button
+      id="btn-modo-oscuro"
+      style="
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        background: none;
+        border: none;
+        font-size: 24px;
+        cursor: pointer;
+      "
+    >
+      🌙
+    </button>
     <div
       id="pantalla-login"
       class="contenedor"
@@ -52,7 +66,14 @@
         <label for="monto">Monto ($):</label>
         <input type="number" id="monto" placeholder="Ej: 1500" required />
         <label for="categoria">Categoria:</label>
-        <select id="categoria" required>
+        <input
+          type="text"
+          id="categoria"
+          list="lista-categorias"
+          placeholder="Selecciona o escribe una nueva..."
+          required
+        />
+        <datalist id="lista-categorias">
           <option value="Comida">Comida</option>
           <option value="Transporte">Combustible</option>
           <option value="Servicios">Servicios</option>
@@ -60,10 +81,21 @@
           <option value="Alquiler">Alquiler</option>
           <option value="Tarjeta-credito">Tarjeta de credito</option>
           <option value="Otros">Otros</option>
-        </select>
+        </datalist>
+        <label for="descripcion">Descripción (opcional):</label>
+        <input
+          type="text"
+          id="descripcion"
+          placeholder="Ej: Compra en el supermercado..."
+        />
         <label for="fecha">Fecha:</label>
         <input type="date" id="fecha" required />
-        <button type="submit">Guardar Gasto</button>
+        <label for="descripcion">Descripción (opcional):</label>
+        <input
+          type="text"
+          id="descripcion"
+          placeholder="Ej: Compra en el supermercado..."
+        />
       </form>
       <div class="control-mes">
         <label for="mes-filtro">Ver mes:</label>
@@ -73,6 +105,12 @@
         <h2>Total: <span id="total-mes">$0</span></h2>
         <div id="resumen-categorias"></div>
         <canvas id="miGrafico" style="margin-top: 20px"></canvas>
+        <button
+          id="btn-exportar"
+          style="margin-top: 20px; background-color: #27ae60; width: 100%"
+        >
+          📊 Exportar Mes a Excel
+        </button>
       </div>
 
       <h2>Historial</h2>
