@@ -161,12 +161,12 @@ todosLosGastos.forEach((doc) => {
     const saldoFinal = saldoAnterior + sueldoMesActual - totalGastosMesActual;
     
     // Actualizar textos en pantalla
-    elementoTotal.innerText = `$${totalGastosMesActual.toFixed(2)}`;
+    elementoTotal.innerText = `${totalGastosMesActual.toFixed(2)}`;
     
     // CORRECCIÓN: Solo usamos innerHTML para mostrar ambas líneas, eliminamos el innerText viejo
     elementoSaldo.innerHTML = `
-      <small style="display:block; font-size:12px; color: #555;">Saldo Anterior (Arrastre): $${saldoAnterior.toFixed(2)}</small>
-      <span>Saldo Actual: $${saldoFinal.toFixed(2)}</span>
+      <small style="display:block; font-size:12px; color: #555;">Saldo Anterior (Arrastre): ${saldoAnterior.toFixed(2)}</small>
+      <span>Saldo Actual: ${saldoFinal.toFixed(2)}</span>
     `;
 
     // Cambiar color a rojo si hay deuda
