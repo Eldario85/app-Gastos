@@ -8,6 +8,14 @@ import {
   doc,
 } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
+import {
+  getAuth,
+  signInWithPopup,
+  GoogleAuthProvider,
+  onAuthStateChanged,
+  signOut,
+} from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+
 // Configuración de Firebase
 const firebaseConfig = {
   apiKey: "AIzaSyAX9brFVKMB_e6tdhzZcD6p3G8sXCjPIVs",
@@ -22,6 +30,10 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
+const auth = getAuth(app);
+const provider = new GoogleAuthProvider();
+let usuarioActual = null; // Aquí guardaremos quién está usando la app
+
 // Seleccionamos los elementos HTML
 const formulario = document.getElementById("formulario-gastos");
 const inputMonto = document.getElementById("monto");
@@ -35,7 +47,7 @@ const inputSueldo = document.getElementById("sueldo-input");
 const btnSueldo = document.getElementById("btn-guardar-sueldo");
 const elementoSaldo = document.getElementById("saldo-disponible");
 
-let graficoVisual = null; 
+let graficoVisual = null;
 
 // Ponemos el mes actual por defecto
 const fechaHoy = new Date();
@@ -45,10 +57,32 @@ inputMesFiltro.value = mesActualString;
 // Recargar al cambiar de mes
 inputMesFiltro.addEventListener("change", cargarGastosDesdeFirebase);
 
+onAuthStateChanged(auth, (user) => {
+  if (user) {
+    // Si hay usuario, guardamos sus datos y cargamos su info
+    usuarioActual = user;
+    console.log("Sesión activa de:", user.displayName);
+    cargarGastosDesdeFirebase();
+  } else {
+    // Si no hay usuario, mandamos a loguear
+    usuarioActual = null;
+    alert("Inicia sesión para ver tus gastos");
+    iniciarSesion();
+  }
+});
+
+async function iniciarSesion() {
+  try {
+    await signInWithPopup(auth, provider);
+  } catch (error) {
+    console.error("Error al iniciar sesión:", error);
+  }
+}
+
 // --- EVENTO: GUARDAR SUELDO ---
 btnSueldo.addEventListener("click", async () => {
   const monto = parseFloat(inputSueldo.value);
-  const mesSeleccionado = inputMesFiltro.value; 
+  const mesSeleccionado = inputMesFiltro.value;
   if (!isNaN(monto) && mesSeleccionado) {
     await addDoc(collection(db, "presupuestos"), {
       mes: mesSeleccionado,
@@ -56,7 +90,7 @@ btnSueldo.addEventListener("click", async () => {
       fechaCreacion: new Date(),
     });
     alert("Sueldo de " + mesSeleccionado + " guardado.");
-    cargarGastosDesdeFirebase(); 
+    cargarGastosDesdeFirebase();
   }
 });
 
@@ -73,6 +107,7 @@ formulario.addEventListener("submit", async function (evento) {
       monto: monto,
       categoria: categoria,
       fecha: fecha,
+      autorId: usuarioActual.uid, // <--- LA ETIQUETA MÁGICA
       creadoEn: new Date(),
     });
 
@@ -87,12 +122,12 @@ formulario.addEventListener("submit", async function (evento) {
 // --- FUNCIÓN PRINCIPAL: LEER Y CALCULAR ---
 async function cargarGastosDesdeFirebase() {
   try {
-    const mesActual = inputMesFiltro.value; 
-    
+    const mesActual = inputMesFiltro.value;
+
     // 1. CALCULAR MES PASADO PARA EL ARRASTRE
     const fechaAux = new Date(mesActual + "-01");
     fechaAux.setMonth(fechaAux.getMonth() - 1);
-    const mesPasado = `${fechaAux.getFullYear()}-${String(fechaAux.getMonth() + 1).padStart(2, '0')}`;
+    const mesPasado = `${fechaAux.getFullYear()}-${String(fechaAux.getMonth() + 1).padStart(2, "0")}`;
 
     const todosLosGastos = await getDocs(collection(db, "gastos"));
     const todosLosSueldos = await getDocs(collection(db, "presupuestos"));
@@ -103,16 +138,20 @@ async function cargarGastosDesdeFirebase() {
     let sueldoMesPasado = 0;
 
     // Buscar sueldos en la base de datos
-    todosLosSueldos.forEach(doc => {
+    todosLosSueldos.forEach((doc) => {
       const data = doc.data();
       if (data.mes === mesActual) sueldoMesActual = data.monto;
       if (data.mes === mesPasado) sueldoMesPasado = data.monto;
     });
 
     // Calcular gastos del mes pasado
-    todosLosGastos.forEach(doc => {
+    todosLosGastos.forEach((doc) => {
       const data = doc.data();
-      if (data.fecha.startsWith(mesPasado)) gastosMesPasado += data.monto;
+      if (
+        gasto.autorId === usuarioActual.uid &&
+        data.fecha.startsWith(mesPasado)
+      )
+        gastosMesPasado += data.monto;
     });
 
     // Determinar lo que sobró el mes pasado
@@ -120,16 +159,19 @@ async function cargarGastosDesdeFirebase() {
     if (sueldoMesPasado === 0) saldoAnterior = 0;
 
     // 2. PROCESAR MES ACTUAL
-    listaGastos.innerHTML = '';
+    listaGastos.innerHTML = "";
     let totalGastosMesActual = 0;
     const totalesPorCategoria = {};
 
-todosLosGastos.forEach((doc) => {
+    todosLosGastos.forEach((doc) => {
       const gasto = doc.data();
       const idGasto = doc.id;
 
-      if (gasto.fecha && gasto.fecha.startsWith(mesActual)) {
-        
+      if (
+        gasto.autorId === usuarioActual.uid &&
+        gasto.fecha &&
+        gasto.fecha.startsWith(mesActual)
+      ) {
         // --- LA DEFENSA ---
         // Nos aseguramos de que el monto sea un número. Si viene vacío o corrupto, lo convertimos en 0.
         const montoLimpio = Number(gasto.monto) || 0;
@@ -141,7 +183,7 @@ todosLosGastos.forEach((doc) => {
         } else {
           totalesPorCategoria[gasto.categoria] = montoLimpio;
         }
-        
+
         // Para crear el elemento en la lista usamos montoLimpio en vez de gasto.monto
         const nuevoElementoLista = document.createElement("li");
         nuevoElementoLista.innerHTML = `
@@ -156,13 +198,14 @@ todosLosGastos.forEach((doc) => {
 
     // 3. MOSTRAR RESULTADOS FINALES
     inputSueldo.value = sueldoMesActual;
-    
+
     // Fórmula final: Saldo Anterior + Sueldo Nuevo - Gastos Actuales
     const saldoFinal = saldoAnterior + sueldoMesActual - totalGastosMesActual;
-    
+
     // Actualizar textos en pantalla
-    elementoTotal.innerText = `${totalGastosMesActual.toFixed(2)}`;
-    
+    document.getElementById("total-mesgasto").innerText =
+      `${totalGastosMesActual.toFixed(2)}`;
+
     // CORRECCIÓN: Solo usamos innerHTML para mostrar ambas líneas, eliminamos el innerText viejo
     elementoSaldo.innerHTML = `
       <small style="display:block; font-size:12px; color: #555;">Saldo Anterior (Arrastre): ${saldoAnterior.toFixed(2)}</small>
@@ -185,13 +228,16 @@ todosLosGastos.forEach((doc) => {
       // Sumamos el valor comprobado a nuestra variable
       sumaGarantizada += totalesPorCategoria[categoria];
     }
+    console.log(sumaGarantizada);
     // Inyectamos el total directamente en el HTML
-    document.getElementById("total-mes").innerText = `$${sumaGarantizada.toFixed(2)}`;
+    elementoTotal.innerHTML = `${sumaGarantizada.toFixed(2)}`;
 
     // 5. GRÁFICO (Chart.js)
     const etiquetasGrafico = Object.keys(totalesPorCategoria);
     const valoresGrafico = Object.values(totalesPorCategoria);
-    const contextoLienzo = document.getElementById("miGrafico").getContext("2d");
+    const contextoLienzo = document
+      .getElementById("miGrafico")
+      .getContext("2d");
 
     if (graficoVisual) {
       graficoVisual.destroy();
@@ -201,12 +247,21 @@ todosLosGastos.forEach((doc) => {
       type: "doughnut",
       data: {
         labels: etiquetasGrafico,
-        datasets: [{
+        datasets: [
+          {
             data: valoresGrafico,
-            backgroundColor: ["#27ae60", "#2980b9", "#e67e22", "#e74c3c", "#8e44ad", "#34495e"],
+            backgroundColor: [
+              "#27ae60",
+              "#2980b9",
+              "#e67e22",
+              "#e74c3c",
+              "#8e44ad",
+              "#34495e",
+            ],
             borderWidth: 2,
             hoverOffset: 4,
-        }],
+          },
+        ],
       },
       options: {
         responsive: true,
@@ -222,12 +277,11 @@ todosLosGastos.forEach((doc) => {
       boton.addEventListener("click", async function (evento) {
         const idParaBorrar = evento.target.getAttribute("data-id");
         if (confirm("¿Seguro que quieres borrar este gasto?")) {
-          await deleteDoc(doc(db, "gastos", idParaBorrar)); 
-          cargarGastosDesdeFirebase(); 
+          await deleteDoc(doc(db, "gastos", idParaBorrar));
+          cargarGastosDesdeFirebase();
         }
       });
     });
-
   } catch (error) {
     console.error("Error al cargar datos ", error);
   }
