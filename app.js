@@ -6,11 +6,13 @@ import {
   getDocs,
   deleteDoc,
   doc,
+  query,
+  where,
 } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
 import {
   getAuth,
-  signInWithPopup,
+  signInWithRedirect,
   GoogleAuthProvider,
   onAuthStateChanged,
   signOut,
@@ -81,7 +83,7 @@ onAuthStateChanged(auth, (user) => {
 
 async function iniciarSesion() {
   try {
-    await signInWithPopup(auth, provider);
+    await signInWithRedirect(auth, provider);
   } catch (error) {
     console.error("Error al iniciar sesión:", error);
     alert("No se pudo iniciar sesión. Revisa si el popup fue bloqueado.");
@@ -97,6 +99,7 @@ btnSueldo.addEventListener("click", async () => {
       mes: mesSeleccionado,
       monto: monto,
       fechaCreacion: new Date(),
+      autorId: usuarioActual.uid,
     });
     alert("Sueldo de " + mesSeleccionado + " guardado.");
     cargarGastosDesdeFirebase();
@@ -138,8 +141,23 @@ async function cargarGastosDesdeFirebase() {
     fechaAux.setMonth(fechaAux.getMonth() - 1);
     const mesPasado = `${fechaAux.getFullYear()}-${String(fechaAux.getMonth() + 1).padStart(2, "0")}`;
 
-    const todosLosGastos = await getDocs(collection(db, "gastos"));
-    const todosLosSueldos = await getDocs(collection(db, "presupuestos"));
+    // Si no hay usuario logueado, detenemos la función aquí mismo
+    if (!usuarioActual) return;
+
+    // 1. Armamos la consulta: "Busca en la colección gastos DONDE el autorId sea igual al mío"
+    const consultaGastos = query(
+      collection(db, "gastos"),
+      where("autorId", "==", usuarioActual.uid),
+    );
+    // Pedimos los gastos usando esa consulta específica
+    const todosLosGastos = await getDocs(consultaGastos);
+
+    // 2. Hacemos exactamente lo mismo para los sueldos
+    const consultaSueldos = query(
+      collection(db, "presupuestos"),
+      where("autorId", "==", usuarioActual.uid),
+    );
+    const todosLosSueldos = await getDocs(consultaSueldos);
 
     let sueldoMesActual = 0;
     let saldoAnterior = 0;
@@ -297,4 +315,4 @@ async function cargarGastosDesdeFirebase() {
 }
 
 // Ejecutar al iniciar
-cargarGastosDesdeFirebase();
+// cargarGastosDesdeFirebase();
