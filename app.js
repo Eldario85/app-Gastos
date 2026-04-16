@@ -178,9 +178,15 @@ todosLosGastos.forEach((doc) => {
 
     // 4. RESUMEN DE CATEGORÍAS EN TEXTO
     divResumenCategorias.innerHTML = "";
+    // Creamos una variable nueva y limpia
+    let sumaGarantizada = 0;
     for (const categoria in totalesPorCategoria) {
       divResumenCategorias.innerHTML += `<p><span>${categoria}</span> <strong>$${totalesPorCategoria[categoria].toFixed(2)}</strong></p>`;
+      // Sumamos el valor comprobado a nuestra variable
+      sumaGarantizada += totalesPorCategoria[categoria];
     }
+    // Inyectamos el total directamente en el HTML
+    document.getElementById("total-mes").innerText = `$${sumaGarantizada.toFixed(2)}`;
 
     // 5. GRÁFICO (Chart.js)
     const etiquetasGrafico = Object.keys(totalesPorCategoria);
