@@ -12,7 +12,7 @@ import {
 
 import {
   getAuth,
-  signInWithRedirect,
+  signInWithPopup,
   GoogleAuthProvider,
   onAuthStateChanged,
   signOut,
@@ -63,8 +63,18 @@ const seccionLogin = document.getElementById("pantalla-login");
 const seccionApp = document.getElementById("app-principal");
 const btnIngresar = document.getElementById("btn-ingresar-google");
 
-// CONECTOR: El botón ahora dispara el popup manualmente
-btnIngresar.addEventListener("click", iniciarSesion);
+// Al poner la función directamente adentro del clic, los navegadores no la bloquean
+btnIngresar.addEventListener("click", function () {
+  signInWithPopup(auth, provider)
+    .then((resultado) => {
+      console.log("¡Sesión iniciada con éxito!", resultado.user.displayName);
+      // No necesitamos hacer nada más aquí, el onAuthStateChanged se encargará de mostrar la app
+    })
+    .catch((error) => {
+      console.error("Error al iniciar sesión:", error);
+      alert("Hubo un error: " + error.message); // Esto nos dirá exactamente qué falla si hay un problema
+    });
+});
 
 onAuthStateChanged(auth, (user) => {
   if (user) {
@@ -81,14 +91,14 @@ onAuthStateChanged(auth, (user) => {
   }
 });
 
-async function iniciarSesion() {
-  try {
-    await signInWithRedirect(auth, provider);
-  } catch (error) {
-    console.error("Error al iniciar sesión:", error);
-    alert("No se pudo iniciar sesión. Revisa si el popup fue bloqueado.");
-  }
-}
+// async function iniciarSesion() {
+//   try {
+//     await signInWithRedirect(auth, provider);
+//   } catch (error) {
+//     console.error("Error al iniciar sesión:", error);
+//     alert("No se pudo iniciar sesión. Revisa si el popup fue bloqueado.");
+//   }
+// }
 
 // --- EVENTO: GUARDAR SUELDO ---
 btnSueldo.addEventListener("click", async () => {
