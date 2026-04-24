@@ -154,6 +154,7 @@ btnCancelarEdicion.addEventListener("click", () => {
 });
 
 // --- LECTURA PRINCIPAL ---
+// --- LECTURA PRINCIPAL ---
 async function cargarGastosDesdeFirebase() {
   if (!usuarioActual) return;
 
@@ -201,6 +202,7 @@ async function cargarGastosDesdeFirebase() {
 
     let gastosDelMes = [];
 
+    // 1. METEMOS TODO EN LA CAJA (Y CERRAMOS BIEN EL BUCLE)
     todosLosGastos.forEach((doc) => {
       const gasto = doc.data();
       const idGasto = doc.id;
@@ -215,54 +217,39 @@ async function cargarGastosDesdeFirebase() {
           totalesPorCategoria[gasto.categoria] = montoLimpio;
         }
 
-        // En lugar de dibujarlo ya, lo metemos en nuestra caja (array)
-        // Guardamos también el ID y el monto limpio para usarlo después
         gastosDelMes.push({
           id: idGasto,
           montoLimpio: montoLimpio,
           ...gasto,
         });
+      }
+    }); // <--- AQUÍ ESTÁ EL CIERRE QUE FALTABA
 
-        // 2. ORDENAMOS LA CAJA (De más reciente a más antiguo)
-        gastosDelMes.sort((a, b) => {
-          // Primero comparamos el día que elegiste en el calendario
-          if (a.fecha > b.fecha) return -1; // 'a' es más nuevo, va arriba
-          if (a.fecha < b.fecha) return 1; // 'b' es más nuevo, va arriba
+    // 2. ORDENAMOS LA CAJA (De más reciente a más antiguo)
+    gastosDelMes.sort((a, b) => {
+      if (a.fecha > b.fecha) return -1;
+      if (a.fecha < b.fecha) return 1;
 
-          // Si compraste dos cosas EL MISMO DÍA, usamos la hora exacta en la que se guardó en Firebase para desempatar
-          if (a.creadoEn && b.creadoEn) {
-            return b.creadoEn.toMillis() - a.creadoEn.toMillis();
-          }
-          return 0;
-        });
+      if (a.creadoEn && b.creadoEn) {
+        return b.creadoEn.toMillis() - a.creadoEn.toMillis();
+      }
+      return 0;
+    });
 
-        // 3. AHORA SÍ, DIBUJAMOS LA LISTA ORDENADA
-    gastosDelMes.forEach(gasto => {
-        const descripcionHTML = gasto.descripcion ? `<em>${gasto.descripcion}</em><br>` : '';
-        const li = document.createElement("li");
-        li.innerHTML = `
+    // 3. AHORA SÍ, DIBUJAMOS LA LISTA ORDENADA
+    gastosDelMes.forEach((gasto) => {
+      const descripcionHTML = gasto.descripcion
+        ? `<em>${gasto.descripcion}</em><br>`
+        : "";
+      const li = document.createElement("li");
+      li.innerHTML = `
         <span><strong>${gasto.categoria}</strong> <br> ${descripcionHTML} <small>${gasto.fecha}</small></span>
         <div>
             <span style="color: #c0392b; font-weight: bold;">$${gasto.montoLimpio.toFixed(2)}</span>
-            <button class="btn-editar" data-id="${gasto.id}" data-monto="${gasto.montoLimpio}" data-cat="${gasto.categoria}" data-desc="${gasto.descripcion || ''}" data-fecha="${gasto.fecha}">✏️</button>
+            <button class="btn-editar" data-id="${gasto.id}" data-monto="${gasto.montoLimpio}" data-cat="${gasto.categoria}" data-desc="${gasto.descripcion || ""}" data-fecha="${gasto.fecha}">✏️</button>
             <button class="btn-borrar" data-id="${gasto.id}">X</button>
         </div>`;
-
-        // // DIBUJAMOS LA LISTA CON DESCRIPCIÓN Y BOTÓN EDITAR
-        // const descripcionHTML = gasto.descripcion
-        //   ? `<em>${gasto.descripcion}</em><br>`
-        //   : "";
-
-        // const li = document.createElement("li");
-        // li.innerHTML = `
-        // <span><strong>${gasto.categoria}</strong> <br> ${descripcionHTML} <small>${gasto.fecha}</small></span>
-        // <div>
-        //     <span style="color: #c0392b; font-weight: bold;">$${montoLimpio.toFixed(2)}</span>
-        //     <button class="btn-editar" data-id="${idGasto}" data-monto="${montoLimpio}" data-cat="${gasto.categoria}" data-desc="${gasto.descripcion || ""}" data-fecha="${gasto.fecha}">✏️</button>
-        //     <button class="btn-borrar" data-id="${idGasto}">X</button>
-        // </div>`;
-        listaGastos.appendChild(li);
-      
+      listaGastos.appendChild(li);
     });
 
     inputSueldo.value = sueldoMesActual;
@@ -270,7 +257,7 @@ async function cargarGastosDesdeFirebase() {
 
     elementoSaldo.innerHTML = `
       <small style="display:block; font-size:12px; color: #555;">Saldo Anterior (Arrastre): $${saldoAnterior.toFixed(2)}</small>
-      <span>Saldo Actual: ${saldoFinal.toFixed(2)}</span>
+      <span>Saldo Actual: $${saldoFinal.toFixed(2)}</span>
     `;
 
     if (saldoFinal < 0) elementoSaldo.classList.add("saldo-negativo");
@@ -284,9 +271,9 @@ async function cargarGastosDesdeFirebase() {
     }
 
     document.getElementById("total-mes").innerText =
-      `${sumaGarantizada.toFixed(2)}`;
+      `$${sumaGarantizada.toFixed(2)}`;
     document.getElementById("total-mesgasto").innerText =
-      `${sumaGarantizada.toFixed(2)}`;
+      `$${sumaGarantizada.toFixed(2)}`;
 
     // GRÁFICO
     const ctx = document.getElementById("miGrafico").getContext("2d");
@@ -331,17 +318,15 @@ async function cargarGastosDesdeFirebase() {
     document.querySelectorAll(".btn-editar").forEach((btn) => {
       btn.addEventListener("click", (e) => {
         const target = e.target;
-        // Llenamos el formulario con los datos viejos
         inputMonto.value = target.getAttribute("data-monto");
         inputCategoria.value = target.getAttribute("data-cat");
         inputDescripcion.value = target.getAttribute("data-desc");
         inputFecha.value = target.getAttribute("data-fecha");
 
-        // Cambiamos el estado a "Edición"
         idGastoEnEdicion = target.getAttribute("data-id");
         btnSubmitGasto.innerText = "Actualizar Gasto";
         btnCancelarEdicion.style.display = "inline-block";
-        window.scrollTo(0, 0); // Sube la pantalla al formulario
+        window.scrollTo(0, 0);
       });
     });
   } catch (error) {
