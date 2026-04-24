@@ -199,6 +199,8 @@ async function cargarGastosDesdeFirebase() {
     let totalGastosMesActual = 0;
     const totalesPorCategoria = {};
 
+    let gastosDelMes = [];
+
     todosLosGastos.forEach((doc) => {
       const gasto = doc.data();
       const idGasto = doc.id;
@@ -212,6 +214,27 @@ async function cargarGastosDesdeFirebase() {
         } else {
           totalesPorCategoria[gasto.categoria] = montoLimpio;
         }
+
+        // En lugar de dibujarlo ya, lo metemos en nuestra caja (array)
+        // Guardamos también el ID y el monto limpio para usarlo después
+        gastosDelMes.push({
+          id: idGasto,
+          montoLimpio: montoLimpio,
+          ...gasto,
+        });
+
+        // 2. ORDENAMOS LA CAJA (De más reciente a más antiguo)
+        gastosDelMes.sort((a, b) => {
+          // Primero comparamos el día que elegiste en el calendario
+          if (a.fecha > b.fecha) return -1; // 'a' es más nuevo, va arriba
+          if (a.fecha < b.fecha) return 1; // 'b' es más nuevo, va arriba
+
+          // Si compraste dos cosas EL MISMO DÍA, usamos la hora exacta en la que se guardó en Firebase para desempatar
+          if (a.creadoEn && b.creadoEn) {
+            return b.creadoEn.toMillis() - a.creadoEn.toMillis();
+          }
+          return 0;
+        });
 
         // DIBUJAMOS LA LISTA CON DESCRIPCIÓN Y BOTÓN EDITAR
         const descripcionHTML = gasto.descripcion
