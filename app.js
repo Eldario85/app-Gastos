@@ -236,21 +236,33 @@ async function cargarGastosDesdeFirebase() {
           return 0;
         });
 
-        // DIBUJAMOS LA LISTA CON DESCRIPCIÓN Y BOTÓN EDITAR
-        const descripcionHTML = gasto.descripcion
-          ? `<em>${gasto.descripcion}</em><br>`
-          : "";
-
+        // 3. AHORA SÍ, DIBUJAMOS LA LISTA ORDENADA
+    gastosDelMes.forEach(gasto => {
+        const descripcionHTML = gasto.descripcion ? `<em>${gasto.descripcion}</em><br>` : '';
         const li = document.createElement("li");
         li.innerHTML = `
         <span><strong>${gasto.categoria}</strong> <br> ${descripcionHTML} <small>${gasto.fecha}</small></span>
         <div>
-            <span style="color: #c0392b; font-weight: bold;">$${montoLimpio.toFixed(2)}</span>
-            <button class="btn-editar" data-id="${idGasto}" data-monto="${montoLimpio}" data-cat="${gasto.categoria}" data-desc="${gasto.descripcion || ""}" data-fecha="${gasto.fecha}">✏️</button>
-            <button class="btn-borrar" data-id="${idGasto}">X</button>
+            <span style="color: #c0392b; font-weight: bold;">$${gasto.montoLimpio.toFixed(2)}</span>
+            <button class="btn-editar" data-id="${gasto.id}" data-monto="${gasto.montoLimpio}" data-cat="${gasto.categoria}" data-desc="${gasto.descripcion || ''}" data-fecha="${gasto.fecha}">✏️</button>
+            <button class="btn-borrar" data-id="${gasto.id}">X</button>
         </div>`;
+
+        // // DIBUJAMOS LA LISTA CON DESCRIPCIÓN Y BOTÓN EDITAR
+        // const descripcionHTML = gasto.descripcion
+        //   ? `<em>${gasto.descripcion}</em><br>`
+        //   : "";
+
+        // const li = document.createElement("li");
+        // li.innerHTML = `
+        // <span><strong>${gasto.categoria}</strong> <br> ${descripcionHTML} <small>${gasto.fecha}</small></span>
+        // <div>
+        //     <span style="color: #c0392b; font-weight: bold;">$${montoLimpio.toFixed(2)}</span>
+        //     <button class="btn-editar" data-id="${idGasto}" data-monto="${montoLimpio}" data-cat="${gasto.categoria}" data-desc="${gasto.descripcion || ""}" data-fecha="${gasto.fecha}">✏️</button>
+        //     <button class="btn-borrar" data-id="${idGasto}">X</button>
+        // </div>`;
         listaGastos.appendChild(li);
-      }
+      
     });
 
     inputSueldo.value = sueldoMesActual;
