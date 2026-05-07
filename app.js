@@ -159,10 +159,7 @@ async function cargarGastosDesdeFirebase() {
   if (!usuarioActual) return;
 
   try {
-    const mesActual = inputMesFiltro.value;
-    const fechaAux = new Date(mesActual + "-01");
-    fechaAux.setMonth(fechaAux.getMonth() - 1);
-    const mesPasado = `${fechaAux.getFullYear()}-${String(fechaAux.getMonth() + 1).padStart(2, "0")}`;
+    const mesActual = inputMesFiltro.value; // Ej: "2026-05"
 
     const consultaGastos = query(
       collection(db, "gastos"),
@@ -177,37 +174,46 @@ async function cargarGastosDesdeFirebase() {
     const todosLosSueldos = await getDocs(consultaSueldos);
 
     let sueldoMesActual = 0;
-    let saldoAnterior = 0;
-    let gastosMesPasado = 0;
-    let sueldoMesPasado = 0;
+    let sumaSueldosHistoricos = 0;
+    let sumaGastosHistoricos = 0;
 
+    // 1. CALCULAMOS EL TOTAL HISTÓRICO ANTES DE ESTE MES
     todosLosSueldos.forEach((doc) => {
       const p = doc.data();
-      if (p.mes === mesActual) sueldoMesActual = p.monto;
-      if (p.mes === mesPasado) sueldoMesPasado = p.monto;
+      if (p.mes === mesActual) {
+        sueldoMesActual = p.monto;
+      } else if (p.mes < mesActual) {
+        // Sumamos todos los ingresos de cualquier mes anterior
+        sumaSueldosHistoricos += p.monto;
+      }
     });
 
     todosLosGastos.forEach((doc) => {
       const g = doc.data();
-      if (g.fecha && g.fecha.startsWith(mesPasado))
-        gastosMesPasado += Number(g.monto) || 0;
+      // Obtenemos el mes del gasto (primeros 7 caracteres: "YYYY-MM")
+      const mesDelGasto = g.fecha ? g.fecha.substring(0, 7) : "";
+
+      if (mesDelGasto < mesActual && mesDelGasto !== "") {
+        // Sumamos todos los gastos ocurridos antes del mes actual
+        sumaGastosHistoricos += Number(g.monto) || 0;
+      }
     });
 
-    saldoAnterior = sueldoMesPasado - gastosMesPasado;
-    if (sueldoMesPasado === 0) saldoAnterior = 0;
+    // El saldo anterior real es: Todo lo que entró - Todo lo que salió (antes de hoy)
+    const saldoAnterior = sumaSueldosHistoricos - sumaGastosHistoricos;
 
+    // --- 2. PROCESAR MES ACTUAL ---
     listaGastos.innerHTML = "";
     let totalGastosMesActual = 0;
     const totalesPorCategoria = {};
-
     let gastosDelMes = [];
 
-    // 1. METEMOS TODO EN LA CAJA (Y CERRAMOS BIEN EL BUCLE)
+    // Filtramos y preparamos los gastos solo del mes seleccionado para la lista
     todosLosGastos.forEach((doc) => {
       const gasto = doc.data();
-      const idGasto = doc.id;
+      const mesDelGasto = gasto.fecha ? gasto.fecha.substring(0, 7) : "";
 
-      if (gasto.fecha && gasto.fecha.startsWith(mesActual)) {
+      if (mesDelGasto === mesActual) {
         const montoLimpio = Number(gasto.monto) || 0;
         totalGastosMesActual += montoLimpio;
 
@@ -218,12 +224,12 @@ async function cargarGastosDesdeFirebase() {
         }
 
         gastosDelMes.push({
-          id: idGasto,
+          id: doc.id,
           montoLimpio: montoLimpio,
           ...gasto,
         });
       }
-    }); // <--- AQUÍ ESTÁ EL CIERRE QUE FALTABA
+    });
 
     // 2. ORDENAMOS LA CAJA (De más reciente a más antiguo)
     gastosDelMes.sort((a, b) => {
