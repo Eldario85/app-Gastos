@@ -8,7 +8,7 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   </head>
   <body>
-    <button
+    <!-- <button
       id="btn-modo-oscuro"
       style="
         position: absolute;
@@ -21,7 +21,7 @@
       "
     >
       🌙
-    </button>
+    </button> -->
     <div
       id="pantalla-login"
       class="contenedor"
@@ -46,6 +46,23 @@
     </div>
 
     <div id="app-principal" style="display: none"></div>
+    <div
+      style="
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+      "
+    >
+      <h2 id="saludo-usuario" style="margin: 0; color: #2980b9">¡Hola!</h2>
+      <button
+        id="btn-modo-oscuro"
+        style="background: none; border: none; font-size: 24px; cursor: pointer"
+      >
+        🌙
+      </button>
+    </div>
+
     <div class="contenedor">
       <div class="seccion-ingreso">
         <label for="sueldo-input">Mi Sueldo/Presupuesto:</label>

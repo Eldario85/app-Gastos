@@ -8,7 +8,7 @@ import {
   doc,
   query,
   where,
-  updateDoc, // <-- NUEVO: updateDoc
+  updateDoc,
 } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 import {
   getAuth,
@@ -40,7 +40,7 @@ const btnIngresar = document.getElementById("btn-ingresar-google");
 const formulario = document.getElementById("formulario-gastos");
 const inputMonto = document.getElementById("monto");
 const inputCategoria = document.getElementById("categoria");
-const inputDescripcion = document.getElementById("descripcion"); // <-- NUEVO
+const inputDescripcion = document.getElementById("descripcion");
 const inputFecha = document.getElementById("fecha");
 const btnSubmitGasto = document.getElementById("btn-submit-gasto");
 const btnCancelarEdicion = document.getElementById("btn-cancelar-edicion");
@@ -51,13 +51,13 @@ const divResumenCategorias = document.getElementById("resumen-categorias");
 const inputSueldo = document.getElementById("sueldo-input");
 const btnSueldo = document.getElementById("btn-guardar-sueldo");
 const elementoSaldo = document.getElementById("saldo-disponible");
-const btnModoOscuro = document.getElementById("btn-modo-oscuro"); // <-- NUEVO
-const btnExportar = document.getElementById("btn-exportar"); // <-- NUEVO
-
+const btnModoOscuro = document.getElementById("btn-modo-oscuro");
+const btnExportar = document.getElementById("btn-exportar");
+const elementoSaludo = document.getElementById("saludo-usuario");
 // Variables de Estado
 let usuarioActual = null;
 let graficoVisual = null;
-let idGastoEnEdicion = null; // <-- NUEVO: Para saber si estamos editando
+let idGastoEnEdicion = null;
 
 // Función para transformar números a formato local (puntos en miles, comas en decimales)
 function formatearNumeroLocal(numero) {
@@ -94,6 +94,13 @@ onAuthStateChanged(auth, (user) => {
     usuarioActual = user;
     seccionLogin.style.display = "none";
     seccionApp.style.display = "block";
+
+    // NUEVO: Tomamos el nombre de Google. Usamos split(" ")[0] para sacar solo el primer nombre.
+    const primerNombre = user.displayName
+      ? user.displayName.split(" ")[0]
+      : "Usuario";
+    elementoSaludo.innerText = `¡Hola, ${primerNombre}! 👋`;
+
     cargarGastosDesdeFirebase();
   } else {
     usuarioActual = null;
@@ -126,7 +133,7 @@ formulario.addEventListener("submit", async function (evento) {
   const datosGasto = {
     monto: parseFloat(inputMonto.value),
     categoria: inputCategoria.value,
-    descripcion: inputDescripcion.value || "", // Guarda vacío si no escriben nada
+    descripcion: inputDescripcion.value || "",
     fecha: inputFecha.value,
     autorId: usuarioActual.uid,
     ultimaModificacion: new Date(),
@@ -166,7 +173,7 @@ async function cargarGastosDesdeFirebase() {
   if (!usuarioActual) return;
 
   try {
-    const mesActual = inputMesFiltro.value; // Ej: "2026-05"
+    const mesActual = inputMesFiltro.value;
 
     const consultaGastos = query(
       collection(db, "gastos"),
@@ -180,27 +187,37 @@ async function cargarGastosDesdeFirebase() {
     );
     const todosLosSueldos = await getDocs(consultaSueldos);
 
-    // 1. FILTRAMOS SUELDOS DUPLICADOS (La magia antibugs)
+    // 1. FILTRAMOS SUELDOS DUPLICADOS
     let sueldosPorMes = {};
     todosLosSueldos.forEach((doc) => {
       const p = doc.data();
       if (p.mes) {
-        // Si hay varios sueldos para el mismo mes, esto guarda solo el último ingresado
         sueldosPorMes[p.mes] = p.monto;
       }
     });
 
-    // 2. SUMAMOS TODO EL INGRESO HISTÓRICO HASTA HOY
-    let sumaSueldosHistoricos = 0;
+    // 2. SUMAMOS INGRESO HISTÓRICO ANTES DE ESTE MES
+    let ingresosHistoricos = 0;
     for (const mes in sueldosPorMes) {
       if (mes < mesActual) {
-        sumaSueldosHistoricos += sueldosPorMes[mes];
+        ingresosHistoricos += sueldosPorMes[mes];
       }
     }
-    // El saldo anterior real es: Todo lo que entró - Todo lo que salió (antes de hoy)
-    const saldoAnterior = sumaSueldosHistoricos - sumaGastosHistoricos;
 
-    // Obtenemos el sueldo del mes actual de nuestro diccionario limpio
+    // 3. RECUPERADO: SUMAMOS TODOS LOS GASTOS HISTÓRICOS ANTES DE ESTE MES
+    let gastosHistoricos = 0;
+    todosLosGastos.forEach((doc) => {
+      const g = doc.data();
+      const mesDelGasto = g.fecha ? g.fecha.substring(0, 7) : "";
+      if (mesDelGasto < mesActual && mesDelGasto !== "") {
+        gastosHistoricos += Number(g.monto) || 0;
+      }
+    });
+
+    // Calculamos el saldo anterior real acumulado
+    const saldoAnterior = ingresosHistoricos - gastosHistoricos;
+
+    // Obtenemos el sueldo del mes actual limpio
     let sueldoMesActual = sueldosPorMes[mesActual] || 0;
 
     // --- 2. PROCESAR MES ACTUAL ---
@@ -209,7 +226,6 @@ async function cargarGastosDesdeFirebase() {
     const totalesPorCategoria = {};
     let gastosDelMes = [];
 
-    // Filtramos y preparamos los gastos solo del mes seleccionado para la lista
     todosLosGastos.forEach((doc) => {
       const gasto = doc.data();
       const mesDelGasto = gasto.fecha ? gasto.fecha.substring(0, 7) : "";
@@ -232,7 +248,7 @@ async function cargarGastosDesdeFirebase() {
       }
     });
 
-    // 2. ORDENAMOS LA CAJA (De más reciente a más antiguo)
+    // ORDENAMOS LA CAJA (De más reciente a más antiguo)
     gastosDelMes.sort((a, b) => {
       if (a.fecha > b.fecha) return -1;
       if (a.fecha < b.fecha) return 1;
@@ -243,7 +259,7 @@ async function cargarGastosDesdeFirebase() {
       return 0;
     });
 
-    // 3. AHORA SÍ, DIBUJAMOS LA LISTA ORDENADA
+    // DIBUJAMOS LA LISTA ORDENADA
     gastosDelMes.forEach((gasto) => {
       const descripcionHTML = gasto.descripcion
         ? `<em>${gasto.descripcion}</em><br>`
@@ -263,19 +279,28 @@ async function cargarGastosDesdeFirebase() {
     const saldoFinal = saldoAnterior + sueldoMesActual - totalGastosMesActual;
 
     elementoSaldo.innerHTML = `
-  <small style="display:block; font-size:12px; color: #555;">Saldo Anterior (Arrastre): $${formatearNumeroLocal(saldoAnterior)}</small>
-  <span>Saldo Actual: $${formatearNumeroLocal(saldoFinal)}</span>
-`;
+      <small style="display:block; font-size:12px; color: #555;">Saldo Anterior (Arrastre): $${formatearNumeroLocal(saldoAnterior)}</small>
+      <span>Saldo Actual: $${formatearNumeroLocal(saldoFinal)}</span>
+    `;
 
     if (saldoFinal < 0) elementoSaldo.classList.add("saldo-negativo");
     else elementoSaldo.classList.remove("saldo-negativo");
 
+    // RECUPERADO: DIBUJAR EL RESUMEN POR CATEGORÍAS Y CALCULAR TOTALES
     divResumenCategorias.innerHTML = "";
     let sumaGarantizada = 0;
-    elementoSaldo.innerHTML = `
-  <small style="display:block; font-size:12px; color: #555;">Saldo Anterior (Arrastre): $${formatearNumeroLocal(saldoAnterior)}</small>
-  <span>Saldo Actual: $${formatearNumeroLocal(saldoFinal)}</span>
-`;
+    for (const cat in totalesPorCategoria) {
+      divResumenCategorias.innerHTML += `<p><span>${cat}</span> <strong>$${formatearNumeroLocal(totalesPorCategoria[cat])}</strong></p>`;
+      sumaGarantizada += totalesPorCategoria[cat];
+    }
+
+    const txtTotalMes = document.getElementById("total-mes");
+    if (txtTotalMes)
+      txtTotalMes.innerText = `$${formatearNumeroLocal(sumaGarantizada)}`;
+
+    const txtTotalMesGasto = document.getElementById("total-mesgasto");
+    if (txtTotalMesGasto)
+      txtTotalMesGasto.innerText = `$${formatearNumeroLocal(sumaGarantizada)}`;
 
     // GRÁFICO
     const ctx = document.getElementById("miGrafico").getContext("2d");
@@ -347,20 +372,17 @@ btnExportar.addEventListener("click", async () => {
   );
   const snapshot = await getDocs(consultaGastos);
 
-  // Encabezados del Excel
   let csvContent = "Fecha,Categoria,Descripcion,Monto\n";
 
   snapshot.forEach((doc) => {
     const g = doc.data();
     if (g.fecha && g.fecha.startsWith(mesActual)) {
-      // Limpiamos comas en textos para que no rompan el Excel
       const desc = g.descripcion ? g.descripcion.replace(/,/g, " ") : "";
       const cat = g.categoria ? g.categoria.replace(/,/g, " ") : "";
       csvContent += `${g.fecha},${cat},${desc},${g.monto}\n`;
     }
   });
 
-  // Crear el archivo descargable
   const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
   const link = document.createElement("a");
   const url = URL.createObjectURL(blob);
