@@ -154,7 +154,6 @@ btnCancelarEdicion.addEventListener("click", () => {
 });
 
 // --- LECTURA PRINCIPAL ---
-// --- LECTURA PRINCIPAL ---
 async function cargarGastosDesdeFirebase() {
   if (!usuarioActual) return;
 
@@ -173,34 +172,28 @@ async function cargarGastosDesdeFirebase() {
     );
     const todosLosSueldos = await getDocs(consultaSueldos);
 
-    let sueldoMesActual = 0;
-    let sumaSueldosHistoricos = 0;
-    let sumaGastosHistoricos = 0;
-
-    // 1. CALCULAMOS EL TOTAL HISTÓRICO ANTES DE ESTE MES
+    // 1. FILTRAMOS SUELDOS DUPLICADOS (La magia antibugs)
+    let sueldosPorMes = {};
     todosLosSueldos.forEach((doc) => {
       const p = doc.data();
-      if (p.mes === mesActual) {
-        sueldoMesActual = p.monto;
-      } else if (p.mes < mesActual) {
-        // Sumamos todos los ingresos de cualquier mes anterior
-        sumaSueldosHistoricos += p.monto;
+      if (p.mes) {
+        // Si hay varios sueldos para el mismo mes, esto guarda solo el último ingresado
+        sueldosPorMes[p.mes] = p.monto;
       }
     });
 
-    todosLosGastos.forEach((doc) => {
-      const g = doc.data();
-      // Obtenemos el mes del gasto (primeros 7 caracteres: "YYYY-MM")
-      const mesDelGasto = g.fecha ? g.fecha.substring(0, 7) : "";
-
-      if (mesDelGasto < mesActual && mesDelGasto !== "") {
-        // Sumamos todos los gastos ocurridos antes del mes actual
-        sumaGastosHistoricos += Number(g.monto) || 0;
+    // 2. SUMAMOS TODO EL INGRESO HISTÓRICO HASTA HOY
+    let sumaSueldosHistoricos = 0;
+    for (const mes in sueldosPorMes) {
+      if (mes < mesActual) {
+        sumaSueldosHistoricos += sueldosPorMes[mes];
       }
-    });
-
+    }
     // El saldo anterior real es: Todo lo que entró - Todo lo que salió (antes de hoy)
     const saldoAnterior = sumaSueldosHistoricos - sumaGastosHistoricos;
+
+    // Obtenemos el sueldo del mes actual de nuestro diccionario limpio
+    let sueldoMesActual = sueldosPorMes[mesActual] || 0;
 
     // --- 2. PROCESAR MES ACTUAL ---
     listaGastos.innerHTML = "";
