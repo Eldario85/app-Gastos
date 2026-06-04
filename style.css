@@ -189,34 +189,58 @@ body.dark-mode {
     background-color: #121212;
     color: #e0e0e0;
 }
-body.dark-mode .contenedor, body.dark-mode .seccion-ingreso, body.dark-mode #pantalla-login {
+
+body.dark-mode .contenedor, 
+body.dark-mode .seccion-ingreso, 
+body.dark-mode #pantalla-login {
     background-color: #1e1e1e;
     border-color: #333;
 }
-body.dark-mode input, body.dark-mode select {
+
+body.dark-mode input, 
+body.dark-mode select {
     background-color: #333;
     color: white;
     border-color: #555;
 }
-body.dark-mode h1, body.dark-mode h2 li span{ color: #4b4a4a; }
-body.dark-mode #lista-gastos li span { border-bottom-color: #333; }
+
+/* Títulos legibles y blancos */
+body.dark-mode h1, 
+body.dark-mode h2 { 
+    color: #ffffff; 
+}
+
+/* Oscurecemos los cuadros de resumen (Saldo y Totales) para que no lastimen la vista */
+body.dark-mode .resumen {
+    background-color: #1a2a25;
+    border-color: #27ae60;
+    color: #a3e4d7;
+}
+
+body.dark-mode #resumen-categorias p {
+    color: #bbbbbb;
+}
 
 /* --- CORRECCIÓN LISTA MODO OSCURO --- */
 body.dark-mode #lista-gastos li {
     background-color: #2a2a2a; /* Fondo gris oscuro para cada gasto */
-    color: #ffffff; /* Texto principal blanco */
     border-bottom: 1px solid #444; /* Línea divisoria más sutil */
 }
 
-/* Color para la fecha y la descripción en modo oscuro */
-body.dark-mode #lista-gastos li small,
-body.dark-mode #lista-gastos li em {
-    color: #bbbbbb; /* Gris clarito para que resalte sobre el fondo oscuro */
+/* Forzamos a que el texto principal y los montos sean blancos */
+body.dark-mode #lista-gastos li span { 
+    color: #ffffff; 
 }
 
-/* Asegurarnos de que el texto de las categorías también se vea bien */
+/* Color gris claro para la fecha y la descripción */
+body.dark-mode #lista-gastos li small,
+body.dark-mode #lista-gastos li em {
+    color: #bbbbbb; 
+}
+
+/* Un azul claro para que la categoría resalte de forma elegante */
 body.dark-mode #lista-gastos li strong {
-    color: #4da6ff; /* Un azul claro para que la categoría resalte un poco */
+    color: #4da6ff; 
 }
 
 /* --- BOTÓN EDITAR --- */
@@ -231,4 +255,7 @@ body.dark-mode #lista-gastos li strong {
     font-weight: bold;
     font-size: 12px;
 }
-.btn-editar:hover { background-color: #e67e22; }
+
+.btn-editar:hover { 
+    background-color: #e67e22; 
+}
