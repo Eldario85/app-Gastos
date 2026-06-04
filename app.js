@@ -59,6 +59,14 @@ let usuarioActual = null;
 let graficoVisual = null;
 let idGastoEnEdicion = null; // <-- NUEVO: Para saber si estamos editando
 
+// Función para transformar números a formato local (puntos en miles, comas en decimales)
+function formatearNumeroLocal(numero) {
+  return new Intl.NumberFormat("es-AR", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(numero);
+}
+
 // Inicialización de Fecha
 const fechaHoy = new Date();
 inputMesFiltro.value = `${fechaHoy.getFullYear()}-${String(fechaHoy.getMonth() + 1).padStart(2, "0")}`;
@@ -244,7 +252,7 @@ async function cargarGastosDesdeFirebase() {
       li.innerHTML = `
         <span><strong>${gasto.categoria}</strong> <br> ${descripcionHTML} <small>${gasto.fecha}</small></span>
         <div>
-            <span style="color: #c0392b; font-weight: bold;">$${gasto.montoLimpio.toFixed(2)}</span>
+            <span style="color: #c0392b; font-weight: bold;">$${formatearNumeroLocal(gasto.montoLimpio)}</span>
             <button class="btn-editar" data-id="${gasto.id}" data-monto="${gasto.montoLimpio}" data-cat="${gasto.categoria}" data-desc="${gasto.descripcion || ""}" data-fecha="${gasto.fecha}">✏️</button>
             <button class="btn-borrar" data-id="${gasto.id}">X</button>
         </div>`;
@@ -255,24 +263,19 @@ async function cargarGastosDesdeFirebase() {
     const saldoFinal = saldoAnterior + sueldoMesActual - totalGastosMesActual;
 
     elementoSaldo.innerHTML = `
-      <small style="display:block; font-size:12px; color: #555;">Saldo Anterior (Arrastre): $${saldoAnterior.toFixed(2)}</small>
-      <span>Saldo Actual: $${saldoFinal.toFixed(2)}</span>
-    `;
+  <small style="display:block; font-size:12px; color: #555;">Saldo Anterior (Arrastre): $${formatearNumeroLocal(saldoAnterior)}</small>
+  <span>Saldo Actual: $${formatearNumeroLocal(saldoFinal)}</span>
+`;
 
     if (saldoFinal < 0) elementoSaldo.classList.add("saldo-negativo");
     else elementoSaldo.classList.remove("saldo-negativo");
 
     divResumenCategorias.innerHTML = "";
     let sumaGarantizada = 0;
-    for (const cat in totalesPorCategoria) {
-      divResumenCategorias.innerHTML += `<p><span>${cat}</span> <strong>$${totalesPorCategoria[cat].toFixed(2)}</strong></p>`;
-      sumaGarantizada += totalesPorCategoria[cat];
-    }
-
-    document.getElementById("total-mes").innerText =
-      `$${sumaGarantizada.toFixed(2)}`;
-    document.getElementById("total-mesgasto").innerText =
-      `$${sumaGarantizada.toFixed(2)}`;
+    elementoSaldo.innerHTML = `
+  <small style="display:block; font-size:12px; color: #555;">Saldo Anterior (Arrastre): $${formatearNumeroLocal(saldoAnterior)}</small>
+  <span>Saldo Actual: $${formatearNumeroLocal(saldoFinal)}</span>
+`;
 
     // GRÁFICO
     const ctx = document.getElementById("miGrafico").getContext("2d");
