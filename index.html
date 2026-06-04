@@ -8,20 +8,6 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   </head>
   <body>
-    <!-- <button
-      id="btn-modo-oscuro"
-      style="
-        position: absolute;
-        top: 10px;
-        right: 10px;
-        background: none;
-        border: none;
-        font-size: 24px;
-        cursor: pointer;
-      "
-    >
-      🌙
-    </button> -->
     <div
       id="pantalla-login"
       class="contenedor"
@@ -45,94 +31,109 @@
       </button>
     </div>
 
-    <div id="app-principal" style="display: none"></div>
-    <div
-      style="
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-bottom: 20px;
-      "
-    >
-      <h2 id="saludo-usuario" style="margin: 0; color: #2980b9">¡Hola!</h2>
-      <button
-        id="btn-modo-oscuro"
-        style="background: none; border: none; font-size: 24px; cursor: pointer"
+    <div id="app-principal" style="display: none">
+      <div
+        class="contenedor"
+        style="
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          margin-bottom: 20px;
+          padding: 15px;
+        "
       >
-        🌙
-      </button>
-    </div>
+        <h2 id="saludo-usuario" style="margin: 0; color: #2980b9">¡Hola!</h2>
+        <button
+          id="btn-modo-oscuro"
+          style="
+            background: none;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+          "
+        >
+          🌙
+        </button>
+      </div>
 
-    <div class="contenedor">
-      <div class="seccion-ingreso">
-        <label for="sueldo-input">Mi Sueldo/Presupuesto:</label>
-        <div class="input-grupo">
-          <input type="number" id="sueldo-input" placeholder="Ej: 500000" />
-          <button id="btn-guardar-sueldo">Fijar</button>
+      <div class="contenedor">
+        <div class="seccion-ingreso">
+          <label for="sueldo-input">Mi Sueldo/Presupuesto:</label>
+          <div class="input-grupo">
+            <input type="number" id="sueldo-input" placeholder="Ej: 500000" />
+            <button id="btn-guardar-sueldo">Fijar</button>
+          </div>
         </div>
-      </div>
 
-      <div class="resumen">
-        <h2>Saldo: <span id="saldo-disponible">$0</span></h2>
-        <p>Gastado: <span id="total-mesgasto">$0</span></p>
-      </div>
-      <h1>Mis Gastos</h1>
-      <form id="formulario-gastos">
-        <label for="monto">Monto ($):</label>
-        <input type="number" id="monto" placeholder="Ej: 1500" required />
-        <label for="categoria">Categoria:</label>
-        <input
-          type="text"
-          id="categoria"
-          list="lista-categorias"
-          placeholder="Selecciona o escribe una nueva..."
-          required
-        />
-        <datalist id="lista-categorias">
-          <option value="Comida">Comida</option>
-          <option value="Combustible">Combustible</option>
-          <option value="Servicios">Servicios</option>
-          <option value="Niñera">Niñera</option>
-          <option value="Alquiler">Alquiler</option>
-          <option value="Tarjeta-credito">Tarjeta de credito</option>
-          <option value="Otros">Otros</option>
-        </datalist>
-        <label for="descripcion">Descripción (opcional):</label>
-        <input
-          type="text"
-          id="descripcion"
-          placeholder="Ej: Compra en el supermercado..."
-        />
-        <label for="fecha">Fecha:</label>
-        <input type="date" id="fecha" required />
-        <button type="submit" id="btn-submit-gasto">Guardar Gasto</button>
-        <button
-          type="button"
-          id="btn-cancelar-edicion"
-          style="display: none; background-color: #95a5a6; margin-top: 10px"
-        >
-          Cancelar Edición
-        </button>
-      </form>
+        <div class="resumen">
+          <h2>Saldo: <span id="saldo-disponible">$0</span></h2>
+          <p>Gastado: <span id="total-mesgasto">$0</span></p>
+        </div>
 
-      <div class="control-mes">
-        <label for="mes-filtro">Ver mes:</label>
-        <input type="month" id="mes-filtro" />
-      </div>
-      <div class="resumen">
-        <h2>Total: <span id="total-mes">$0</span></h2>
-        <div id="resumen-categorias"></div>
-        <canvas id="miGrafico" style="margin-top: 20px"></canvas>
-        <button
-          id="btn-exportar"
-          style="margin-top: 20px; background-color: #27ae60; width: 100%"
-        >
-          📊 Exportar Mes a Excel
-        </button>
-      </div>
+        <h1>Mis Gastos</h1>
 
-      <h2>Historial</h2>
-      <ul id="lista-gastos"></ul>
+        <form id="formulario-gastos">
+          <label for="monto">Monto ($):</label>
+          <input type="number" id="monto" placeholder="Ej: 1500" required />
+
+          <label for="categoria">Categoria:</label>
+          <input
+            type="text"
+            id="categoria"
+            list="lista-categorias"
+            placeholder="Selecciona o escribe una nueva..."
+            required
+          />
+          <datalist id="lista-categorias">
+            <option value="Comida">Comida</option>
+            <option value="Combustible">Combustible</option>
+            <option value="Servicios">Servicios</option>
+            <option value="Niñera">Niñera</option>
+            <option value="Alquiler">Alquiler</option>
+            <option value="Tarjeta-credito">Tarjeta de credito</option>
+            <option value="Otros">Otros</option>
+          </datalist>
+
+          <label for="descripcion">Descripción (opcional):</label>
+          <input
+            type="text"
+            id="descripcion"
+            placeholder="Ej: Compra en el supermercado..."
+          />
+
+          <label for="fecha">Fecha:</label>
+          <input type="date" id="fecha" required />
+
+          <button type="submit" id="btn-submit-gasto">Guardar Gasto</button>
+          <button
+            type="button"
+            id="btn-cancelar-edicion"
+            style="display: none; background-color: #95a5a6; margin-top: 10px"
+          >
+            Cancelar Edición
+          </button>
+        </form>
+
+        <div class="control-mes">
+          <label for="mes-filtro">Ver mes:</label>
+          <input type="month" id="mes-filtro" />
+        </div>
+
+        <div class="resumen">
+          <h2>Total: <span id="total-mes">$0</span></h2>
+          <div id="resumen-categorias"></div>
+          <canvas id="miGrafico" style="margin-top: 20px"></canvas>
+          <button
+            id="btn-exportar"
+            style="margin-top: 20px; background-color: #27ae60; width: 100%"
+          >
+            📊 Exportar Mes a Excel
+          </button>
+        </div>
+
+        <h2>Historial</h2>
+        <ul id="lista-gastos"></ul>
+      </div>
     </div>
     <script type="module" src="app.js"></script>
   </body>

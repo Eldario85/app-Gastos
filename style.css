@@ -201,6 +201,24 @@ body.dark-mode input, body.dark-mode select {
 body.dark-mode h1, body.dark-mode h2 li span{ color: #4b4a4a; }
 body.dark-mode #lista-gastos li span { border-bottom-color: #333; }
 
+/* --- CORRECCIÓN LISTA MODO OSCURO --- */
+body.dark-mode #lista-gastos li {
+    background-color: #2a2a2a; /* Fondo gris oscuro para cada gasto */
+    color: #ffffff; /* Texto principal blanco */
+    border-bottom: 1px solid #444; /* Línea divisoria más sutil */
+}
+
+/* Color para la fecha y la descripción en modo oscuro */
+body.dark-mode #lista-gastos li small,
+body.dark-mode #lista-gastos li em {
+    color: #bbbbbb; /* Gris clarito para que resalte sobre el fondo oscuro */
+}
+
+/* Asegurarnos de que el texto de las categorías también se vea bien */
+body.dark-mode #lista-gastos li strong {
+    color: #4da6ff; /* Un azul claro para que la categoría resalte un poco */
+}
+
 /* --- BOTÓN EDITAR --- */
 .btn-editar {
     background-color: #f39c12;
