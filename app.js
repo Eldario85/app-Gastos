@@ -188,11 +188,23 @@ async function cargarGastosDesdeFirebase() {
     const todosLosSueldos = await getDocs(consultaSueldos);
 
     // 1. FILTRAMOS SUELDOS DUPLICADOS
+// 1. FILTRAMOS SUELDOS DUPLICADOS (Asegurando que quede el más nuevo)
     let sueldosPorMes = {};
+    let tiemposSueldos = {}; // Memoria para saber qué tan nuevo es el sueldo guardado
+
     todosLosSueldos.forEach((doc) => {
       const p = doc.data();
       if (p.mes) {
-        sueldosPorMes[p.mes] = p.monto;
+        // Obtenemos la hora exacta (en milisegundos) en la que apretaste "Fijar"
+        const tiempoActual = p.fechaCreacion ? p.fechaCreacion.toMillis() : 0;
+        // Revisamos si ya teníamos una hora guardada para este mes
+        const tiempoGuardado = tiemposSueldos[p.mes] || 0;
+
+        // Solo guardamos el monto si este documento es MÁS NUEVO que el que ya teníamos
+        if (tiempoActual >= tiempoGuardado) {
+          sueldosPorMes[p.mes] = p.monto;
+          tiemposSueldos[p.mes] = tiempoActual;
+        }
       }
     });
 
